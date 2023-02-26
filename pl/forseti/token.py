@@ -79,7 +79,7 @@ TokenKind.FunctionDecl = TokenKind("Function type decl", "FUN")
 TokenKind.ParameterDecl = TokenKind("Function parameter type decl", "FPA")
 TokenKind.FunctionCall = TokenKind("Function call", "FCL")
 TokenKind.VariableDecl = TokenKind("Variable", "VAR")
-# TokenKind.DeclRefExpr = TokenKind("DeclRefExpr", "DRE")
+TokenKind.DeclRefExpr = TokenKind("DeclRefExpr", "DRE")
 
 TokenKind.Try = TokenKind("Try statment", "TRY")
 TokenKind.Throw = TokenKind("Throw statment", "TRH")

@@ -8,7 +8,9 @@ from ..code_unit import CodeUnit
 from .ccode_filter import CCodeFilter
 
 def __add_children_to_stack__(parent_token: Token, cursor: ClangCursorKind, stack: Deque[Tuple[Token, ClangCursor]]):
-    stack.extendleft([parent_token, child] for child in cursor.get_children())
+    new_elements = [[parent_token, child] for child in cursor.get_children()];
+
+    stack.extendleft(reversed(new_elements))
 
 class ClangASTConverter:
     def __init__(self, cursor_filter: CCodeFilter) -> None:
@@ -50,7 +52,7 @@ class ClangASTConverter:
         conversion_map[ClangCursorKind.BREAK_STMT] = TokenKind.Break
         conversion_map[ClangCursorKind.RETURN_STMT] = TokenKind.Return
         conversion_map[ClangCursorKind.DECL_STMT] = TokenKind.DeclStmt
-        # conversion_map[ClangCursorKind.DECL_REF_EXPR] = TokenKind.DeclRefExpr
+        conversion_map[ClangCursorKind.DECL_REF_EXPR] = TokenKind.DeclRefExpr
         conversion_map[ClangCursorKind.TYPEDEF_DECL] = TokenKind.Alias
 
         # Experimental C++ cursors handling
@@ -107,7 +109,7 @@ class ClangASTConverter:
         return list(clang_cursor.get_tokens())[left_offset].spelling
     
     def __clang_cursor_kind_to_token_type_kind__(self, clang_cursor: ClangCursor) -> VariableTokenKind:
-        clang_canonical_type = clang_cursor.type.get_canonical()
+        clang_canonical_type = clang_cursor.type.get_canonical().kind
         
         for clang_type_kind, token_type_kind in self.conversion_types_map.items():
             if isinstance(clang_type_kind, tuple):
@@ -122,8 +124,12 @@ class ClangASTConverter:
     def __clang_cursor_kind_to_token_kind__(self, clang_cursor: ClangCursor) -> TokenKind:
         clang_cursor_kind = clang_cursor.kind
         for clang_kind, token_kind in self.conversion_cursor_map.items():
-            if clang_cursor_kind == clang_kind:
-                return token_kind
+            if isinstance(clang_kind, tuple):
+                if clang_cursor_kind in clang_kind:
+                    return token_kind
+            else:
+                if clang_cursor_kind == clang_kind:
+                    return token_kind
 
         return TokenKind.Invalid
         
@@ -135,16 +141,17 @@ class ClangASTConverter:
         token.token_kind = self.__clang_cursor_kind_to_token_kind__(clang_cursor)
         token.variable_token_kind = self.__clang_cursor_kind_to_token_type_kind__(clang_cursor)
         token.parent_token = parent_token
+
         #TODO: Maybe its worth to store only basename?
         token.location = (clang_cursor.location.file.name,
                             clang_cursor.location.line,
                             clang_cursor.location.column)
-        
+
         if token.token_kind == TokenKind.BinaryOp:
                 token.name = self.__get_binary_op_token__(clang_cursor)
         
-        if token.token_kind == TokenKind.VariableDecl:
-            if token.variable_token_kind in [VariableTokenKind.Numeric, VariableTokenKind.FloatingPoint]:
+        if token.variable_token_kind in [VariableTokenKind.Numeric, VariableTokenKind.FloatingPoint]:
+            if token.token_kind not in [TokenKind.VariableDecl, TokenKind.BinaryOp]:
                 token.name = self.__get_numeric_literal__(clang_cursor)
 
         return token
@@ -168,6 +175,7 @@ class ClangASTConverter:
     def __convert_children_cursors__(self, stack: Deque[Tuple[Token, ClangCursor]]) -> None:
         while stack:
             parent_token, current_cursor = stack.popleft()
+
             if self.cursor_filter.validate(current_cursor):
                 token = self.__clang_cursor_to_token__(current_cursor, parent_token)    
                 parent_token.children.append(token)
@@ -175,9 +183,17 @@ class ClangASTConverter:
             else:
                 __add_children_to_stack__(parent_token, current_cursor, stack)
 
-
+    def __remove_repetive_top_tokens__(self, tokens: List['Token']) -> List['Token']:
+        unique_tokens = []
+        filtered = []
+        for token in tokens:
+            if (token.name, token.token_kind, token.type_name) not in unique_tokens:
+                filtered.append(token)
+                unique_tokens.append((token.name, token.token_kind, token.type_name))
+        return filtered
+    
     def convert(self, clang_cursors: List[ClangCursor]) -> List['CodeUnit']:
         root_ast_tokens, stack = self.__convert_root_cursors__(clang_cursors)
         self.__convert_children_cursors__(stack)
 
-        return [CodeUnit(root_token) for root_token in root_ast_tokens]
+        return [CodeUnit(root_token) for root_token in self.__remove_repetive_top_tokens__(root_ast_tokens)]
