@@ -9,6 +9,7 @@ from pl.forseti.c_code.ccode_parser import CCodeParser
 from pl.forseti.c_code.ccode_filter import CCodeFilter, CCodeFilterConfig
 from pl.forseti.code_tokenizer import CodeTokenizer
 from pl.forseti.detection_engine import DetectionEngine
+from pl.forseti.report_generator import write_comparison_result
 
 class CommandLineApp:
 
@@ -55,7 +56,8 @@ class CommandLineApp:
 
         programs_sets = read_programs_sets(filepaths_sets)
         tokenized_programs = CodeTokenizer(CCodeParser(CCodeFilter(CCodeFilterConfig()))).parse_programs(programs_sets)
-        programs = DetectionEngine().analyze(tokenized_programs)
+        comparison_results = DetectionEngine().analyze(tokenized_programs)
+        write_comparison_result(comparison_results)
 
         
 

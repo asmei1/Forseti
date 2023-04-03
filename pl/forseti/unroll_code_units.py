@@ -93,7 +93,7 @@ class UnrollCodeUnits:
                             unrolled_tokens.append((function_call_token, candidate_function_token))
 
             for function_token, replacement in unrolled_tokens:
-                to_remove.add(all_asts.index(replacement))
+                to_remove.add(candidate_asts.index(replacement))
                 parent = function_token.parent_token
                 copied_tokens = []
                 # Copy tokens from function body
@@ -141,6 +141,7 @@ class UnrollCodeUnits:
                 index = parent.children.index(function_token)
                 parent.children.remove(function_token)
 
+
                 # If call token is used as input parameters to other function,
                 # place replacement above.
                 if parent.token_kind in [TokenKind.BinaryOp, TokenKind.FunctionCall, TokenKind.VariableDecl]:
@@ -158,15 +159,15 @@ class UnrollCodeUnits:
                 # Replace call token with copied tokens  
                     parent.children[index:index] = copied_tokens
 
-        if remove_unrolled_functions:
-            for index in sorted(to_remove, reverse=True):
-                candidate_asts.pop(index)
-                
+
         if unroll_only_simple_functions:
             for ast in all_asts:
                 if ast not in candidate_asts:
                     candidate_asts.append(ast)
 
+        if remove_unrolled_functions:
+            for index in sorted(to_remove, reverse=True):
+                candidate_asts.pop(index)
 
         unrolled_program = tokenized_program
         unrolled_program.code_units = [CodeUnit(ast) for ast in candidate_asts]
