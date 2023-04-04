@@ -50,4 +50,6 @@ def rkr_gst(pattern: TilesManager, source: TilesManager, minimal_search_length:i
                 search_length = minimal_search_length
             else:
                 break
+    if all_matches:
+        all_matches = sorted(all_matches, key=lambda x: x['length'])
     return all_matches if all_matches else None

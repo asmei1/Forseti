@@ -9,7 +9,7 @@ from pl.forseti.c_code.ccode_parser import CCodeParser
 from pl.forseti.c_code.ccode_filter import CCodeFilter, CCodeFilterConfig
 from pl.forseti.code_tokenizer import CodeTokenizer
 from pl.forseti.detection_engine import DetectionEngine
-from pl.forseti.report_generator import write_comparison_result
+from pl.forseti.report_generator import write_comparison_result, ReportGenerator
 
 class CommandLineApp:
 
@@ -35,6 +35,10 @@ class CommandLineApp:
             'detection algorithm configuration')
         algorithm_options.add_argument('--sample_option', type=str, required=False)
 
+        report_options = self.parser.add_argument_group(
+            'report generation configuration')
+        report_options.add_argument('--output_path', type=str, required=True)
+
         self.__args = self.parser.parse_args(args=None if sys.argv[1:] else ['--help'])
 
         self.__set_logging_level(self.__args)
@@ -58,6 +62,9 @@ class CommandLineApp:
         tokenized_programs = CodeTokenizer(CCodeParser(CCodeFilter(CCodeFilterConfig()))).parse_programs(programs_sets)
         comparison_results = DetectionEngine().analyze(tokenized_programs)
         write_comparison_result(comparison_results)
+        report_generator = ReportGenerator(comparison_results, self.__args.output_path)
+        report_generator.generate_heatmap_for_whole_programs()
+        report_generator.generate_heatmaps()
 
         
 
