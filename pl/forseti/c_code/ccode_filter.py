@@ -13,7 +13,7 @@ class CCodeFilterConfig:
     filter_function_declaration: bool = True
     """Defines, if structure declaration should be filtered."""
 
-    filter_alias: bool = True
+    filter_aliasses: bool = True
     """Defines, if alias (typedef) should be filtered."""
 
     filter_mixed_declarations: bool = True
@@ -30,63 +30,61 @@ class CCodeFilterConfig:
     is int var = (x + y)."""
 
 
+def is_initialization_list(cursor: ClangCursor) -> bool:
+    return cursor.kind is ClangCursorKind.INIT_LIST_EXPR
+
+def is_struct_declaration(cursor: ClangCursor) -> bool:
+    return cursor.kind is ClangCursorKind.STRUCT_DECL
+
+def is_function_declaration(cursor: ClangCursor) -> bool:
+    if cursor.kind is ClangCursorKind.FUNCTION_DECL:
+        return not cursor.is_definition()
+    return False
+
+def is_alias(cursor: ClangCursor) -> bool:
+    return cursor.kind is ClangCursorKind.TYPEDEF_DECL
+
+def is_mixed_declarations(cursor: ClangCursor) -> bool:
+    return cursor.kind is ClangCursorKind.DECL_STMT
+
+def is_brackets(cursor: ClangCursor) -> bool:
+    return cursor.kind is ClangCursorKind.COMPOUND_STMT
+
+def is_parent_expression(cursor: ClangCursor) -> bool:
+    return cursor.kind is ClangCursorKind.PAREN_EXPR
+
+def is_unexposed_expression(cursor: ClangCursor) -> bool:
+    return cursor.kind is ClangCursorKind.UNEXPOSED_EXPR
+
+def is_type_reference(cursor: ClangCursor) -> bool:
+    return cursor.kind is ClangCursorKind.TYPE_REF
 
 class CCodeFilter:
     """"""
-
-    def __is_struct_declaration(self, cursor: ClangCursor) -> bool:
-        if cursor.kind is ClangCursorKind.STRUCT_DECL:
-            return not cursor.is_definition()
-        return False
-
-    def __is_function_declaration(self, cursor: ClangCursor) -> bool:
-        if cursor.kind is ClangCursorKind.FUNCTION_DECL:
-            return not cursor.is_definition()
-        return False
-
-    def __is_alias(self, cursor: ClangCursor) -> bool:
-        return cursor.kind is ClangCursorKind.TYPEDEF_DECL
-
-    def __is_mixed_declarations(self, cursor: ClangCursor) -> bool:
-        return cursor.kind is ClangCursorKind.DECL_STMT
-
-    def __is_brackets(self, cursor: ClangCursor) -> bool:
-        return cursor.kind is ClangCursorKind.COMPOUND_STMT
-
-    def __is_parent_expression(self, cursor: ClangCursor) -> bool:
-        return cursor.kind is ClangCursorKind.PAREN_EXPR
-
-    def __is_unexposed_expression(self, cursor: ClangCursor) -> bool:
-        return cursor.kind is ClangCursorKind.UNEXPOSED_EXPR
-
-    def __is_type_reference(self, cursor: ClangCursor) -> bool:
-        return cursor.kind is ClangCursorKind.TYPE_REF
-
-    def __is_initialization_list(self, cursor: ClangCursor) -> bool:
-        return cursor.kind is ClangCursorKind.INIT_LIST_EXPR
 
     def __init__(self, config=CCodeFilterConfig()) -> None:
         # self.__config = config
         self.__rules = []
 
-        always_filter_rules = [
-            self.__is_unexposed_expression, self.__is_type_reference,
-            self.__is_initialization_list
+        fixed_filter_rules = [
+            is_unexposed_expression, 
+            is_type_reference,
+            is_initialization_list
         ]
 
-        self.__rules += always_filter_rules
+        self.__rules += fixed_filter_rules
 
         associated_rules = {}
-        associated_rules['filter_alias'] = self.__is_alias
+        associated_rules['filter_aliasses'] = is_alias
         associated_rules[
-            'filter_mixed_declarations'] = self.__is_mixed_declarations
+            'filter_mixed_declarations'] = is_mixed_declarations
         associated_rules[
-            'filter_function_declaration'] = self.__is_function_declaration
+            'filter_function_declaration'] = is_function_declaration
         associated_rules[
-            'filter_struct_declaration'] = self.__is_struct_declaration
-        associated_rules['filter_brackets'] = self.__is_brackets
+            'filter_struct_declaration'] = is_struct_declaration
+        associated_rules['filter_brackets'] = is_brackets
         associated_rules[
-            'filter_parent_expression'] = self.__is_parent_expression
+            'filter_parent_expression'] = is_parent_expression
 
         config_fields = asdict(config)
         for field_name, rule in associated_rules.items():

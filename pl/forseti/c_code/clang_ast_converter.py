@@ -13,12 +13,8 @@ def __add_children_to_stack__(parent_token: Token, cursor: ClangCursorKind, stac
     stack.extendleft(reversed(new_elements))
 
 class ClangASTConverter:
-    def __init__(self, cursor_filter: CCodeFilter) -> None:
-        self.conversion_cursor_map = self.__create_cursor_kind_conversion_dict()
-        self.conversion_types_map = self.__create_type_kind_conversion_map__()
-        self.cursor_filter = cursor_filter
-
-    def __create_cursor_kind_conversion_dict(self) -> Dict[ClangCursorKind, TokenKind]:
+    @staticmethod
+    def create_cursor_kind_conversion_dict() -> Dict[ClangCursorKind, TokenKind]:
         conversion_map: Dict[ClangCursorKind, TokenKind] = {}
         conversion_map[ClangCursorKind.STRUCT_DECL] = TokenKind.ClassDecl
         conversion_map[ClangCursorKind.ENUM_DECL] = TokenKind.EnumDecl
@@ -71,7 +67,8 @@ class ClangASTConverter:
 
         return conversion_map
     
-    def __create_type_kind_conversion_map__(self) -> Dict[ClangCursorType, TokenKind]:
+    @staticmethod
+    def create_type_kind_conversion_map__() -> Dict[ClangCursorType, TokenKind]:
         conversion_map: Dict[ClangCursorType, TokenKind] = {}
         conversion_map[(ClangCursorType.VOID)] = VariableTokenKind.Void
         conversion_map[(ClangCursorType.BOOL)] = VariableTokenKind.Bool
@@ -93,6 +90,12 @@ class ClangASTConverter:
                     ClangCursorType.DEPENDENTSIZEDARRAY)] = VariableTokenKind.Array
         return conversion_map
 
+    conversion_cursor_map = create_cursor_kind_conversion_dict()
+    conversion_types_map = create_type_kind_conversion_map__()
+
+    def __init__(self, cursor_filter: CCodeFilter) -> None:
+        self.cursor_filter = cursor_filter
+
     def __get_numeric_literal__(self, clang_cursor: ClangCursor) -> str:
         tokens = [token for token in clang_cursor.get_tokens()]
         # It seems like clang interpret 'NULL' in some strange way, so this if statment is needed.
@@ -111,7 +114,7 @@ class ClangASTConverter:
     def __clang_cursor_kind_to_token_type_kind__(self, clang_cursor: ClangCursor) -> VariableTokenKind:
         clang_canonical_type = clang_cursor.type.get_canonical().kind
         
-        for clang_type_kind, token_type_kind in self.conversion_types_map.items():
+        for clang_type_kind, token_type_kind in ClangASTConverter.conversion_types_map.items():
             if isinstance(clang_type_kind, tuple):
                 if clang_canonical_type in clang_type_kind:
                     return token_type_kind
@@ -123,7 +126,7 @@ class ClangASTConverter:
         
     def __clang_cursor_kind_to_token_kind__(self, clang_cursor: ClangCursor) -> TokenKind:
         clang_cursor_kind = clang_cursor.kind
-        for clang_kind, token_kind in self.conversion_cursor_map.items():
+        for clang_kind, token_kind in ClangASTConverter.conversion_cursor_map.items():
             if isinstance(clang_kind, tuple):
                 if clang_cursor_kind in clang_kind:
                     return token_kind

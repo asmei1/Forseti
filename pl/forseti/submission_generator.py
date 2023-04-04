@@ -34,7 +34,6 @@ class SubmissionGenerator:
 
 
         submissions: List[Submission] = []
-        l = list(itertools.combinations(asts, 2))
         for pair in itertools.combinations(asts, 2):
             (program_a, ast_a), (program_b, ast_b) = pair
 
