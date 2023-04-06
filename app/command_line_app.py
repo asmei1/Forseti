@@ -4,6 +4,7 @@ import sys
 import logging
 import itertools
 import time
+import multiprocessing
 from typing import List
 from .files_scanner import scan_for_files
 from .programs_reader import read_programs_sets
@@ -11,7 +12,11 @@ from pl.forseti.c_code.ccode_parser import CCodeParser
 from pl.forseti.c_code.ccode_filter import CCodeFilter, CCodeFilterConfig
 from pl.forseti.code_tokenizer import CodeTokenizer
 from pl.forseti.detection_engine import DetectionEngine
+from pl.forseti.detection_config import DetectionConfig
 from pl.forseti.report_generator import ReportGenerator
+
+def get_available_number_of_cores():
+    return multiprocessing.cpu_count() - 1 if multiprocessing.cpu_count() - 1 else 1
 
 class CommandLineApp:
 
@@ -33,7 +38,7 @@ class CommandLineApp:
             help='Paths to programs which will be checked.',
             required=False)
         program_sources_options.add_argument(
-            '--patterns',
+            '--file_patterns',
             nargs='+',            
             default=["*.c", "*.h"],
             help='If folder scanning was enabled, application will look for files with fit to one of the patterns.',
@@ -41,7 +46,7 @@ class CommandLineApp:
 
         processing_options = self.parser.add_argument_group(
             'processing programs configuration')
-        processing_options.add_argument('--n_processors', type=int, required=False, default=-1,
+        processing_options.add_argument('--n_processors', type=int, required=False, default=get_available_number_of_cores(),
                                         help="Number of processors used in programs tokenization. Value -1 means that multiprocessing is disabled.")
         processing_options.add_argument('--filter_struct_declaration', type=bool, required=False, default=True,
                                         help="Defines, if tokens related structure declaration should be filtered.")
@@ -80,10 +85,16 @@ class CommandLineApp:
         config.filter_struct_declaration = self.__args.filter_struct_declaration
         return config
     
+    def args_to_detection_config(self):
+        config = DetectionConfig()
+        #TODO add rest
+        config.n_processors = self.__args.n_processors
+        return config
+    
     def run(self) -> None:
         filepaths_sets = []
         if self.__args.paths:
-            filepaths_sets = scan_for_files(self.__args.paths, self.__args.patterns)
+            filepaths_sets = scan_for_files(self.__args.paths, self.__args.file_patterns)
             if not filepaths_sets:
                 logging.error('No programs found, please ensure that you pass valid arguments for --path option')
                 return
@@ -95,19 +106,20 @@ class CommandLineApp:
         self.__validate_paths__(filepaths_sets)
 
         programs_sets = read_programs_sets(filepaths_sets)
+
         ccode_filter_config = self.args_to_ccode_filtration_config()
         tokenization_start_time = time.process_time()
         tokenized_programs = CodeTokenizer(CCodeParser(CCodeFilter(ccode_filter_config)), n_processors=self.__args.n_processors).parse_programs(programs_sets)
         tokenization_end_time = time.process_time()
 
         detection_start_time = time.process_time()
-        comparison_results = DetectionEngine().analyze(tokenized_programs)
+        comparison_results = DetectionEngine().analyze(tokenized_programs, self.args_to_detection_config())
         detection_end_time = time.process_time()
-        # write_comparison_result(comparison_results)
         report_generator = ReportGenerator(comparison_results, self.__args.output_path)
         report_generator.generate_heatmap_for_whole_programs()
         report_generator.generate_heatmaps()
         print(report_generator.get_comparison_result_in_json()[0])
+
         print("Tokenization time ", tokenization_end_time - tokenization_start_time)
         print("Detection time ", detection_end_time - detection_start_time)
         
