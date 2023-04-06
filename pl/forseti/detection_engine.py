@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import List
 
 from .tokenized_program import TokenizedProgram
@@ -29,8 +30,13 @@ class DetectionEngine:
         tiles_b = TilesManager(tokens_b)
 
         logging.info("analyzing submission...")
-        matches = rkr_gst(tiles_a, tiles_b, 5, 8, get_sequence_from_tokens, DetectionEngine.token_comparison_function)
-        logging.info("done...")
+        start_time = time.process_time()
+        if tiles_a.size() > tiles_b.size():
+            matches = rkr_gst(tiles_b, tiles_a, 5, 8, get_sequence_from_tokens, DetectionEngine.token_comparison_function)
+        else:
+            matches = rkr_gst(tiles_a, tiles_b, 5, 8, get_sequence_from_tokens, DetectionEngine.token_comparison_function)
+
+        logging.info(f"done {time.process_time() - start_time} ...")
         return ComparisonResult(submission, matches)
     
     def __generate_submissions__(self, tokenized_programs: List[TokenizedProgram], config: DetectionConfig) -> List[Submission]:
@@ -50,8 +56,9 @@ class DetectionEngine:
 
 
     def analyze(self, tokenized_programs: List[TokenizedProgram], config: DetectionConfig = DetectionConfig()):
-        logging.info("analyzing submissions...")
         submissions: List[Submission] = self.__generate_submissions__(tokenized_programs, config)
+        logging.info(f"analyzing {len(submissions)} submissions...")
+        
         if config.n_processors == -1:
             comparison_results = [DetectionEngine.compare_tokens(submission) for submission in submissions]
         else:
