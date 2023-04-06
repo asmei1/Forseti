@@ -1,16 +1,6 @@
 import logging
 import os
-
-def dir_path(self, optional_path):
-    """
-    Checks, if given path is directory.
-    If not, raise NotADirectoryError
-    """
-
-    if os.path.isdir(optional_path):
-        return optional_path
-    else:
-        raise NotADirectoryError(optional_path)
+import fnmatch
 
 def validate_file_paths(paths): 
     for file_paths in paths:
@@ -19,8 +9,7 @@ def validate_file_paths(paths):
                 raise FileNotFoundError(path)
 
 
-
-def scan_for_files(paths, extensions):
+def scan_for_files(paths, patterns):
     scanned_paths = []
     if len(paths) >= 2:
         logging.info('Passing multiple programs explicitly')
@@ -28,21 +17,24 @@ def scan_for_files(paths, extensions):
     elif len(paths) == 1 and len(paths[0]) == 1 and os.path.isdir(paths[0][0]):
         logging.info('Passing folder with sources')
         
-        for folder in os.listdir(paths[0][0]):
-            folder = os.path.join(paths[0][0], folder)
-            if not os.path.isdir(folder):
-                continue
-            files = []
-            for file in os.listdir(folder):
-                file = os.path.abspath(os.path.join(folder, file))
-                if os.path.splitext(file)[1] in extensions:
-                    files.append(file)
-                else:
-                    logging.warning('Detected not valid file: %s. Skipped', file)
-            if files:
-                scanned_paths.append(files)
+        for file_entry in os.listdir(paths[0][0]):
+            if not os.path.isdir(os.path.join(paths[0][0], file_entry)):
+                file_path = file_entry
+                for pattern in tuple(patterns):
+                    for file in fnmatch.filter([file_path], pattern):
+                        scanned_paths.append([os.path.abspath(os.path.join(paths[0][0], file))])
+                        
             else:
-                logging.warning('Folder %s does not have any source code files', folder)
+                folder = os.path.join(paths[0][0], file_entry)
+                canditate_files = [f for f in os.listdir(folder)]
+                files = []
+                for pattern in tuple(patterns):
+                    for file in fnmatch.filter(canditate_files, pattern):
+                        files.append(os.path.abspath(os.path.join(folder, file)))
+                if files:
+                    scanned_paths.append(files)
+                else:
+                    logging.warning('Folder %s does not have any source code files', folder)
     
     validate_file_paths(scanned_paths)
     return scanned_paths

@@ -63,7 +63,13 @@ class CCodeParser(CodeParser):
         tokenized_program.filenames = program.filenames
         tokenized_program.raw_codes = program.raw_codes
         if not program.author:
-            tokenized_program.author = str(os.path.basename(os.path.dirname(program.filenames[0]))) if len(program.filenames) >= 1 else str(os.path.basename(program.filenames[0])) 
+            basename = os.path.basename(os.path.dirname(program.filenames[0]))
+            if len(program.filenames) > 1:
+                tokenized_program.author = str(basename)
+            else:
+                filename = os.path.basename(program.filenames[0])
+                tokenized_program.author = str(os.path.join(basename, filename))
+
         else:
             tokenized_program.author = program.author
         
