@@ -3,6 +3,7 @@ from collections import deque
 from clang.cindex import CursorKind as ClangCursorKind
 from clang.cindex import TypeKind as ClangCursorType
 from clang.cindex import Cursor as ClangCursor
+from clang.cindex import TokenKind as ClangTokenKind
 from ..token import Token, TokenKind, VariableTokenKind, Location
 from ..code_unit import CodeUnit 
 from .ccode_filter import CCodeFilter
@@ -114,6 +115,12 @@ class ClangASTConverter:
             # Macro detection, so we cannot get to tokens
             return ""
         return tokens[left_offset].spelling
+        
+    def __get_unary_or_compound_op_token__(self, clang_cursor: ClangCursor) -> str:
+        for token in list(clang_cursor.get_tokens()):
+            if token.kind == ClangTokenKind.PUNCTUATION:
+                return token.spelling
+        return ""
     
     def __clang_cursor_kind_to_token_type_kind__(self, clang_cursor: ClangCursor) -> VariableTokenKind:
         clang_canonical_type = clang_cursor.type.get_canonical().kind
@@ -154,11 +161,14 @@ class ClangASTConverter:
                                 clang_cursor.location.column)
 
         if token.token_kind == TokenKind.BinaryOp:
-                token.name = self.__get_binary_op_token__(clang_cursor)
-        
+            token.name = self.__get_binary_op_token__(clang_cursor)
+        elif token.token_kind == TokenKind.UnaryOp or token.token_kind == TokenKind.CompoundAssigmentOp:
+            token.name = self.__get_unary_or_compound_op_token__(clang_cursor)
+
         if token.variable_token_kind in [VariableTokenKind.Numeric, VariableTokenKind.FloatingPoint]:
-            if token.token_kind not in [TokenKind.VariableDecl, TokenKind.BinaryOp]:
+            if token.token_kind not in [TokenKind.VariableDecl, TokenKind.BinaryOp, TokenKind.UnaryOp]:
                 token.name = self.__get_numeric_literal__(clang_cursor)
+
 
         return token
     
