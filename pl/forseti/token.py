@@ -1,5 +1,5 @@
 from typing import List, Tuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 
 class TokenKind:
     """Represents cursor kind."""
@@ -66,7 +66,7 @@ VariableTokenKind.FloatingPoint = VariableTokenKind("Floating point presicion ty
 VariableTokenKind.Enum = VariableTokenKind("Enum type", "ENU")
 VariableTokenKind.Array = VariableTokenKind("Array type", "ARR")
 #literals
-TokenKind.CharacteLiteral = TokenKind("Char literatal type", "CHL")
+TokenKind.CharacterLiteral = TokenKind("Char literatal type", "CHL")
 TokenKind.NumericLiteral = TokenKind("Numeric literal type", "NUL")
 TokenKind.FloatingPointLiteral = TokenKind("Floating point literal type", "FLL")
 TokenKind.StringLiteral = TokenKind("String literal type", "STL")
@@ -112,6 +112,11 @@ TokenKind.TernaryOp = TokenKind("Ternary (conditional) operator", "TER")
 TokenKind.CastExpr = TokenKind("Cast type", "CST")
 TokenKind.Alias = TokenKind("Alias on type, typedef", "TPD")
 
+@dataclass
+class Location:
+    path: str = ""
+    line: int = -1
+    column: int = -1
 
 @dataclass
 class Token:
@@ -119,6 +124,9 @@ class Token:
     type_name: str = ""
     token_kind: TokenKind = None
     variable_token_kind: VariableTokenKind = None
-    location: Tuple[str, int, int] = field(default_factory=list)
+    location: Location = None
     children: List['Token'] = field(default_factory=list)
     parent_token: 'Token' = None
+
+    def location_as_dict(self):
+        return asdict(self.location)

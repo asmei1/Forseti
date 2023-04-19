@@ -3,7 +3,7 @@ from collections import deque
 from clang.cindex import CursorKind as ClangCursorKind
 from clang.cindex import TypeKind as ClangCursorType
 from clang.cindex import Cursor as ClangCursor
-from ..token import Token, TokenKind, VariableTokenKind
+from ..token import Token, TokenKind, VariableTokenKind, Location
 from ..code_unit import CodeUnit 
 from .ccode_filter import CCodeFilter
 
@@ -25,7 +25,7 @@ class ClangASTConverter:
 
         conversion_map[ClangCursorKind.CALL_EXPR] = TokenKind.FunctionCall
         conversion_map[ClangCursorKind.INTEGER_LITERAL, ClangCursorKind.NULL_STMT] = TokenKind.NumericLiteral
-        conversion_map[ClangCursorKind.CHARACTER_LITERAL] = TokenKind.CharacteLiteral
+        conversion_map[ClangCursorKind.CHARACTER_LITERAL] = TokenKind.CharacterLiteral
         conversion_map[ClangCursorKind.FLOATING_LITERAL] = TokenKind.FloatingPointLiteral
         conversion_map[ClangCursorKind.STRING_LITERAL] = TokenKind.StringLiteral
 
@@ -144,11 +144,10 @@ class ClangASTConverter:
         token.token_kind = self.__clang_cursor_kind_to_token_kind__(clang_cursor)
         token.variable_token_kind = self.__clang_cursor_kind_to_token_type_kind__(clang_cursor)
         token.parent_token = parent_token
-
         #TODO: Maybe its worth to store only basename?
-        token.location = (clang_cursor.location.file.name,
-                            clang_cursor.location.line,
-                            clang_cursor.location.column)
+        token.location = Location(clang_cursor.location.file.name,
+                                clang_cursor.location.line,
+                                clang_cursor.location.column)
 
         if token.token_kind == TokenKind.BinaryOp:
                 token.name = self.__get_binary_op_token__(clang_cursor)
