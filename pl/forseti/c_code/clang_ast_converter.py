@@ -109,7 +109,11 @@ class ClangASTConverter:
         # binary operator have always 2 children
         binary_op_children = [child for child in clang_cursor.get_children()]
         left_offset = len([token for token in binary_op_children[0].get_tokens()])
-        return list(clang_cursor.get_tokens())[left_offset].spelling
+        tokens = list(clang_cursor.get_tokens())
+        if len(tokens) <= left_offset:
+            # Macro detection, so we cannot get to tokens
+            return ""
+        return tokens[left_offset].spelling
     
     def __clang_cursor_kind_to_token_type_kind__(self, clang_cursor: ClangCursor) -> VariableTokenKind:
         clang_canonical_type = clang_cursor.type.get_canonical().kind
@@ -177,7 +181,6 @@ class ClangASTConverter:
     def __convert_children_cursors__(self, stack: Deque[Tuple[Token, ClangCursor]]) -> None:
         while stack:
             parent_token, current_cursor = stack.popleft()
-
             if self.cursor_filter.validate(current_cursor):
                 token = self.__clang_cursor_to_token__(current_cursor, parent_token)    
                 parent_token.children.append(token)
@@ -197,5 +200,4 @@ class ClangASTConverter:
     def convert(self, clang_cursors: List[ClangCursor]) -> List['CodeUnit']:
         root_ast_tokens, stack = self.__convert_root_cursors__(clang_cursors)
         self.__convert_children_cursors__(stack)
-
         return [CodeUnit(root_token) for root_token in self.__remove_repetive_top_tokens__(root_ast_tokens)]
