@@ -21,12 +21,15 @@ class DetectionEngine:
         return ''.join([token.token_kind.short_name for token in tokens])    
     
     @staticmethod
-    def token_comparison_function(compare_function_names_in_function_calls:bool, token_a: Token, token_b: Token):
+    def token_comparison_function(distinguish_operators_symbols:bool,compare_function_names_in_function_calls:bool, token_a: Token, token_b: Token):
         if token_a.token_kind == token_b.token_kind:
-            if token_a.token_kind == TokenKind.CharacterLiteral:
+            if token_a.token_kind in [TokenKind.CharacterLiteral]:
                 return token_a.name == token_b.name
             if compare_function_names_in_function_calls:
                 if token_a.token_kind == TokenKind.FunctionCall:
+                    return token_a.name == token_b.name
+            if distinguish_operators_symbols:
+                if token_a.token_kind in [TokenKind.BinaryOp, TokenKind.UnaryOp, TokenKind.CompoundAssigmentOp] :
                     return token_a.name == token_b.name
             return True
 
@@ -53,7 +56,7 @@ class DetectionEngine:
     @staticmethod
     def compare_tokens(config_and_comparison_pair):
         config, comparison_pair = config_and_comparison_pair
-        compare_function_names_in_function_calls, minimal_search_length, initial_search_length = config
+        distinguish_operators_symbols, compare_function_names_in_function_calls, minimal_search_length, initial_search_length = config
         tokens_a, tokens_b = (comparison_pair.tokens_a, comparison_pair.tokens_b)
         # a = " ".join([t.token_kind.short_name for t in tokens_a])
         # b = " ".join([t.token_kind.short_name for t in tokens_b])
@@ -62,7 +65,7 @@ class DetectionEngine:
 
         logging.debug("analyzing comparison pair...")
         start_time = time.process_time()
-        token_comparison_function = lambda token_a, token_b: DetectionEngine.token_comparison_function(compare_function_names_in_function_calls, token_a, token_b)
+        token_comparison_function = lambda token_a, token_b: DetectionEngine.token_comparison_function(distinguish_operators_symbols, compare_function_names_in_function_calls, token_a, token_b)
         raw_matches = rkr_gst(tiles_a, tiles_b, minimal_search_length, initial_search_length, DetectionEngine.get_sequence_from_tokens, token_comparison_function)
         matches = DetectionEngine.convert_raw_matches(raw_matches, tiles_a, tiles_b)
         logging.debug(f"done {time.process_time() - start_time} ...")
@@ -86,7 +89,7 @@ class DetectionEngine:
         comparison_pairs: List[ComparisonPair] = self.__generate_comparison_pairs__(tokenized_programs, config, selected_programs_to_compare)
         logging.info(f"analyzing {len(comparison_pairs)} comparison_pairs...")
         
-        rkr_gst_config = (config.compare_function_names_in_function_calls, config.minimal_search_length, config.initial_search_length)
+        rkr_gst_config = (config.distinguish_operators_symbols, config.compare_function_names_in_function_calls, config.minimal_search_length, config.initial_search_length)
         if config.n_processors == 1:
             comparison_results = [DetectionEngine.compare_tokens((rkr_gst_config, pair)) for pair in comparison_pairs]
         else:

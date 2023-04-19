@@ -12,5 +12,6 @@ class DetectionConfig:
     minimal_search_length: int = 8
     initial_search_length: int = 20 
     compare_function_names_in_function_calls: bool = True  
+    distinguish_operators_symbols: bool = True  
     n_processors: int = 1
 

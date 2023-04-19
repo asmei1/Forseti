@@ -75,6 +75,7 @@ class CommandLineApp:
         algorithm_options.add_argument('--minimal_search_length', type=int, default=8, required=False)
         algorithm_options.add_argument('--initial_search_length', type=int, default=20, required=False)
         algorithm_options.add_argument('--compare_function_names_in_function_calls', type=bool, default=True, required=False)
+        algorithm_options.add_argument('--distinguish_operators_symbols', type=bool, default=True, required=False)
         algorithm_options.add_argument('--selected_programs_to_compare', nargs='+', required=False, default=[])
 
         self.__args = self.parser.parse_args(args=sys_args)
@@ -97,6 +98,7 @@ class CommandLineApp:
         config.n_processors = self.__args.n_processors 
         config.minimal_search_length = self.__args.minimal_search_length
         config.initial_search_length = self.__args.initial_search_length
+        config.distinguish_operators_symbols = self.__args.distinguish_operators_symbols
         config.compare_function_names_in_function_calls = self.__args.compare_function_names_in_function_calls
         return config
     
