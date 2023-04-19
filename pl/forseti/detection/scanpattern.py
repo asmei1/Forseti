@@ -61,10 +61,14 @@ def scanpattern(pattern: TilesManager, source: TilesManager, search_length:int, 
             k = 0
             for value in values:
                 m = value[0]
+                #TODO: Currently, I have no idea why this conditional is required here. NO IDEA -_-
+                if (m + k > pattern.size() - 1) or (unmarked_token_start_index + k > source.size() - 1):
+                    continue
                 source_token = pattern.tokens[m + k]
                 pattern_token = source.tokens[unmarked_token_start_index + k]
                 is_unmarked_source_token = not pattern.is_marked(m + k)
                 is_unmarked_pattern_token = not source.is_marked(unmarked_token_start_index + k)
+              
                 while token_comparision_function(source_token, pattern_token) \
                     and (is_unmarked_source_token and is_unmarked_pattern_token) \
                     and (m + k <= pattern.size() - 1) \
@@ -83,7 +87,9 @@ def scanpattern(pattern: TilesManager, source: TilesManager, search_length:int, 
                         is_unmarked_source_token = not source.is_marked(unmarked_token_start_index + k)
                     else:
                         break
-                maximal_matches.add(k, (m, unmarked_token_start_index))
+
+                if k >= search_length:
+                    maximal_matches.add(k, (m, unmarked_token_start_index))
 
             if k > longest_maximal_match:
                 longest_maximal_match = k

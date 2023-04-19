@@ -18,8 +18,6 @@ def check_matches(matches,  n1: int, n2: int) -> bool:
 def rkr_gst(pattern: TilesManager, source: TilesManager, minimal_search_length:int, initial_search_length:int, subsequence_generator_function = "".join, token_comparision_function = eq):
     search_length = initial_search_length
     all_matches = []
-
-    maximal = 0
     while True:
         maximal_matches = LinkedList()
         longest_maximal_match = scanpattern(pattern, source, search_length, maximal_matches, subsequence_generator_function, token_comparision_function)
@@ -31,25 +29,29 @@ def rkr_gst(pattern: TilesManager, source: TilesManager, minimal_search_length:i
 
 
             for maximal_match_length in maximal_matches.maximal_matches:
+                if maximal_match_length < search_length:
+                    continue
                 queue = maximal_matches.find(maximal_match_length)
-                matches = queue.data
-                for m in matches:
-                    if not check_matches(all_matches, m[0], m[1]):
-                        continue
+                if queue:
+                    matches = queue.data
+                    for m in matches:
+                        if not check_matches(all_matches, m[0], m[1]):
+                            continue
 
-                    all_matches.append(
-                        {
-                            'position_of_token_1': m[0],
-                            'position_of_token_2': m[1],
-                            'length': maximal_match_length,
-                        })
+                        all_matches.append(
+                            {
+                                'position_of_token_1': m[0],
+                                'position_of_token_2': m[1],
+                                'length': maximal_match_length,
+                            })
+                        
 
             if search_length > 2 * minimal_search_length:
-                search_length = int(search_length / 2)
+                search_length = int(search_length / 2) + 1
             elif search_length > minimal_search_length:
                 search_length = minimal_search_length
             else:
                 break
     if all_matches:
-        all_matches = sorted(all_matches, key=lambda x: x['length'])
+        all_matches = sorted(all_matches, key=lambda x: x['length'], reverse=True)
     return all_matches if all_matches else None

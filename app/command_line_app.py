@@ -12,7 +12,8 @@ from pl.forseti.c_code.ccode_filter import CCodeFilter, CCodeFilterConfig
 from pl.forseti.code_tokenizer import CodeTokenizer
 from pl.forseti.detection_engine import DetectionEngine
 from pl.forseti.detection_config import DetectionConfig
-from pl.forseti.report_generator import ReportGenerator
+from pl.forseti.report_generation.report_generator import ReportGenerator
+from pl.forseti.report_generation.report_generation_config import ReportGenerationConfig
 
 def get_available_number_of_cores():
     return multiprocessing.cpu_count() - 1 if multiprocessing.cpu_count() - 1 else 1
@@ -29,7 +30,7 @@ class CommandLineApp:
             help=
             'Provide logging level. Example --loglevel debug, default=warning')
 
-        program_sources_options = self.parser.add_argument_group('program source')
+        program_sources_options = self.parser.add_argument_group('programs sources')
         program_sources_options.add_argument(
             '--paths',
             nargs='+',
@@ -46,7 +47,7 @@ class CommandLineApp:
         processing_options = self.parser.add_argument_group(
             'processing programs configuration')
         processing_options.add_argument('--n_processors', type=int, required=False, default=get_available_number_of_cores(),
-                                        help="Number of processors used in programs tokenization. Value -1 means that multiprocessing is disabled.")
+                                        help="Number of processors used in programs tokenization. Value -1 means that all available processors will be used.")
         processing_options.add_argument('--filter_struct_declaration', type=bool, required=False, default=True,
                                         help="Defines, if tokens related structure declaration should be filtered.")
         processing_options.add_argument('--filter_function_declaration', type=bool, required=False, default=True,
@@ -62,13 +63,19 @@ class CommandLineApp:
                                         help="Defines, if parent expression should be filtered. Parent expression for example is int var = (x + y).")
 
 
-        algorithm_options = self.parser.add_argument_group(
-            'detection algorithm configuration')
-        algorithm_options.add_argument('--sample_option', type=str, required=False)
+        report_generation_options = self.parser.add_argument_group('report generation configuration')
+        report_generation_options.add_argument('--generate_heatmap_for_whole_programs', type=bool, default=False, required=False)
+        report_generation_options.add_argument('--generate_heatmap_for_code_units', type=bool, default=False, required=False)
+        report_generation_options.add_argument('--generate_jsons', type=bool, default=True, required=False)
+        report_generation_options.add_argument('--generate_html_diffs', type=bool, default=True, required=False)
+        report_generation_options.add_argument('--output_path', type=str, required=True)
+        
 
-        report_options = self.parser.add_argument_group(
-            'report generation configuration')
-        report_options.add_argument('--output_path', type=str, required=True)
+        algorithm_options = self.parser.add_argument_group('detection algorithm configuration')
+        algorithm_options.add_argument('--minimal_search_length', type=int, default=8, required=False)
+        algorithm_options.add_argument('--initial_search_length', type=int, default=20, required=False)
+        algorithm_options.add_argument('--compare_function_names_in_function_calls', type=bool, default=True, required=False)
+        algorithm_options.add_argument('--selected_programs_to_compare', nargs='+', required=False, default=[])
 
         self.__args = self.parser.parse_args(args=sys_args)
 
@@ -87,6 +94,18 @@ class CommandLineApp:
     def args_to_detection_config(self):
         config = DetectionConfig()
         #TODO add rest
+        config.n_processors = self.__args.n_processors 
+        config.minimal_search_length = self.__args.minimal_search_length
+        config.initial_search_length = self.__args.initial_search_length
+        config.compare_function_names_in_function_calls = self.__args.compare_function_names_in_function_calls
+        return config
+    
+    def args_to_report_generation_config(self):
+        config = ReportGenerationConfig()
+        config.generate_heatmap_for_whole_programs = self.__args.generate_heatmap_for_whole_programs 
+        config.generate_heatmap_for_code_units = self.__args.generate_heatmap_for_code_units 
+        config.generate_jsons = self.__args.generate_jsons
+        config.generate_html_diffs = self.__args.generate_html_diffs
         config.n_processors = self.__args.n_processors
         return config
     
@@ -101,7 +120,8 @@ class CommandLineApp:
             self.parser.print_help()
             logging.error('Invalid arguments, please input valid one')
             return
-
+        if -1 == self.__args.n_processors:
+            self.__args.n_processors = multiprocessing.cpu_count() - 1
         self.__validate_paths__(filepaths_sets)
 
         programs_sets = read_programs_sets(filepaths_sets)
@@ -111,13 +131,16 @@ class CommandLineApp:
         tokenized_programs = CodeTokenizer(CCodeParser(CCodeFilter(ccode_filter_config)), n_processors=self.__args.n_processors).parse_programs(programs_sets)
         tokenization_end_time = time.process_time()
 
+        detection_config = self.args_to_detection_config()
         detection_start_time = time.process_time()
-        comparison_results = DetectionEngine().analyze(tokenized_programs, self.args_to_detection_config())
+        comparison_results = DetectionEngine().analyze(tokenized_programs, detection_config, self.__args.selected_programs_to_compare)
         detection_end_time = time.process_time()
-        report_generator = ReportGenerator(comparison_results, self.__args.output_path)
-        report_generator.generate_heatmap_for_whole_programs()
-        report_generator.generate_heatmaps()
-        print(report_generator.get_comparison_result_in_json()[0])
+
+        report_generation_config = self.args_to_report_generation_config()
+        report_generator = ReportGenerator(comparison_results, report_generation_config, self.__args.output_path)
+        report_generator.generate_reports()
+        
+        # with 
 
         print("Tokenization time ", tokenization_end_time - tokenization_start_time)
         print("Detection time ", detection_end_time - detection_start_time)
