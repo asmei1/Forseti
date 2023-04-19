@@ -1,6 +1,5 @@
 import argparse
 import os
-import sys
 import logging
 import itertools
 import time
@@ -20,7 +19,7 @@ def get_available_number_of_cores():
 
 class CommandLineApp:
 
-    def __init__(self) -> None:
+    def __init__(self, sys_args) -> None:
         self.parser = argparse.ArgumentParser(description='Performs plagiarism detection')
 
         self.parser.add_argument(
@@ -71,7 +70,7 @@ class CommandLineApp:
             'report generation configuration')
         report_options.add_argument('--output_path', type=str, required=True)
 
-        self.__args = self.parser.parse_args(args=None if sys.argv[1:] else ['--help'])
+        self.__args = self.parser.parse_args(args=sys_args)
 
         self.__set_logging_level(self.__args)
 
