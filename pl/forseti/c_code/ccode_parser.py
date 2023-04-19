@@ -3,10 +3,6 @@ import os
 
 from typing import List
 from clang.cindex import Index
-# from clang.cindex import CursorKind as ClangCursorKind
-# from clang.cindex import TypeKind as ClangCursorType
-# from clang.cindex import Cursor as ClangCursor
-
 from ..code_parser import CodeParser
 from ..program import Program
 from ..tokenized_program import TokenizedProgram
@@ -67,8 +63,8 @@ class CCodeParser(CodeParser):
             if len(program.filenames) > 1:
                 tokenized_program.author = str(basename)
             else:
-                filename = os.path.basename(program.filenames[0])
-                tokenized_program.author = str(os.path.join(basename, filename))
+                filename = os.path.splitext(os.path.basename(program.filenames[0]))[0]
+                tokenized_program.author = str(filename)
 
         else:
             tokenized_program.author = program.author
