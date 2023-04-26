@@ -183,6 +183,10 @@ class ClangASTConverter:
             parent_token, current_cursor = root_stack.popleft()
             if self.cursor_filter.validate(current_cursor):
                 token = self.__clang_cursor_to_token__(current_cursor, parent_token)
+                # make sure that main function have always the same name (so main(), main(int argc, char **argv) and other variations will be treated in the same way)
+                if token.name.startswith("main("):
+                    token.name = "main()"
+                    token.type_name = "int ()"
                 root_ast_tokens.append(token)
                 __add_children_to_stack__(token, current_cursor, stack)
 
