@@ -161,17 +161,20 @@ def generate_html_diff_page(filename, output_file):
     </body>
     </html>
     '''
-    for i, comparison in enumerate(comparison_results):
-        start_1 = comparison['start_token_1']['line'] 
-        end_1 = comparison['end_token_1']['line']  
-        path_1 = comparison['start_token_1']['path']
-        index_1 = [i for i, x in enumerate(files_1) if x[0] == path_1][0]
+    i = 0
+    for comparison in comparison_results:
+        for localization in comparison['localization']:
+            start_1 = localization['start_token_1']['line'] 
+            end_1 = localization['end_token_1']['line']  
+            path_1 = localization['start_token_1']['path']
+            index_1 = [i for i, x in enumerate(files_1) if x[0] == path_1][0]
 
-        start_2 = comparison['start_token_2']['line'] 
-        end_2 = comparison['end_token_2']['line'] 
-        path_2 = comparison['start_token_2']['path'] 
-        index_2 = [i for i, x in enumerate(files_2) if x[0] == path_2][0]
-        html = __generate_html_diff(html, start_1, end_1, index_1, start_2, end_2, index_2, i)
+            start_2 = localization['start_token_2']['line'] 
+            end_2 = localization['end_token_2']['line'] 
+            path_2 = localization['start_token_2']['path'] 
+            index_2 = [i for i, x in enumerate(files_2) if x[0] == path_2][0]
+            html = __generate_html_diff(html, start_1, end_1, index_1, start_2, end_2, index_2, i)
+            i += 1
 
     soup = BeautifulSoup(html, 'html.parser')
     script_tag = soup.new_tag('script')

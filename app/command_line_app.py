@@ -69,6 +69,8 @@ class CommandLineApp:
         report_generation_options.add_argument('--generate_jsons', type=bool, default=True, required=False)
         report_generation_options.add_argument('--generate_html_diffs', type=bool, default=True, required=False)
         report_generation_options.add_argument('--output_path', type=str, required=True)
+        report_generation_options.add_argument('--minimal_similarity_threshold', type=float, required=False, default=0.5)
+        report_generation_options.add_argument('--maximal_similarity_threshold', type=float, required=False, default=1.0)
         
 
         algorithm_options = self.parser.add_argument_group('detection algorithm configuration')
@@ -109,6 +111,8 @@ class CommandLineApp:
         config.generate_jsons = self.__args.generate_jsons
         config.generate_html_diffs = self.__args.generate_html_diffs
         config.n_processors = self.__args.n_processors
+        config.minimal_similarity_threshold = self.__args.minimal_similarity_threshold
+        config.maximal_similarity_threshold = self.__args.maximal_similarity_threshold
         return config
     
     def run(self) -> None:

@@ -39,7 +39,7 @@ class ComparisonPairsGenerator:
             if selected_programs_to_compare:
                 if not (program_a.author in selected_programs_to_compare or program_b.author in selected_programs_to_compare):
                     continue
-                
+
             if program_a is program_b:
                 continue
 
