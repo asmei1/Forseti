@@ -49,7 +49,7 @@ def rkr_gst(pattern: TilesManager, source: TilesManager, minimal_search_length:i
             if search_length > 2 * minimal_search_length:
                 search_length = int(search_length / 2) + 1
             elif search_length > minimal_search_length:
-                search_length = minimal_search_length
+                search_length = min(minimal_search_length, min(len(pattern.tokens), len(source.tokens)))
             else:
                 break
     if all_matches:

@@ -9,7 +9,7 @@ from ..code_unit import CodeUnit
 from .ccode_filter import CCodeFilter
 
 def __add_children_to_stack__(parent_token: Token, cursor: ClangCursorKind, stack: Deque[Tuple[Token, ClangCursor]]):
-    new_elements = [[parent_token, child] for child in cursor.get_children()];
+    new_elements = [[parent_token, child] for child in cursor.get_children()]
 
     stack.extendleft(reversed(new_elements))
 
@@ -159,6 +159,13 @@ class ClangASTConverter:
         token.location = Location(clang_cursor.location.file.name,
                                 clang_cursor.location.line,
                                 clang_cursor.location.column)
+        
+        # From function result type I need to get location explicitly
+        if token.token_kind == TokenKind.FunctionDecl:
+            result_token_location = next(clang_cursor.get_tokens()).location
+            token.location = Location(clang_cursor.location.file.name,
+                                result_token_location.line,
+                                result_token_location.column)
 
         if token.token_kind == TokenKind.BinaryOp:
             token.name = self.__get_binary_op_token__(clang_cursor)

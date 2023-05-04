@@ -42,14 +42,38 @@ class DetectionEngine:
         readable_matches = []
         for m in matches:
             length = m['length']
-            token_1_idx = m['position_of_token_1']
-            token_2_idx = m['position_of_token_2']
+            token_1_idx = m['position_of_token_1'] 
+            token_2_idx = m['position_of_token_2'] 
+            token_1_end_idx = token_1_idx + length - 1
+            token_2_end_idx = token_2_idx + length - 1
+            last_token_1 = pattern.tokens[token_1_end_idx]
+            last_token_1_location = last_token_1.location_as_dict()
+            last_token_1_location['column'] += len(pattern.tokens[token_1_end_idx].name)
+
+            last_token_2 = source.tokens[token_2_end_idx]
+            last_token_2_location = last_token_2.location_as_dict()
+            last_token_2_location['column'] += len(source.tokens[token_2_end_idx].name)
+
+            
+            for i in range(max(token_1_end_idx-10, token_1_idx), token_1_end_idx):
+                location_candidate = pattern.tokens[i].location
+                if location_candidate.line >= last_token_1_location['line'] and location_candidate.column + len(pattern.tokens[i].name) >= last_token_1_location['column']:
+                    last_token_1_location = pattern.tokens[i].location_as_dict()
+                    last_token_1_location['column'] += len(pattern.tokens[i].name)
+
+            for i in range(max(token_2_end_idx-10, token_2_idx), token_2_end_idx):
+                location_candidate = source.tokens[i].location
+                if location_candidate.line >= last_token_2_location['line'] and location_candidate.column + len(source.tokens[i].name) >= last_token_2_location['column']:
+                    last_token_2_location = source.tokens[i].location_as_dict()
+                    last_token_2_location['column'] += len(source.tokens[i].name)
+
+
             readable_matches.append({
                                 'start_token_1': pattern.tokens[token_1_idx].location_as_dict(),
                                 'length': length,
-                                'end_token_1': pattern.tokens[token_1_idx + length - 1].location_as_dict(),
+                                'end_token_1': last_token_1_location,
                                 'start_token_2': source.tokens[token_2_idx].location_as_dict(),
-                                'end_token_2': source.tokens[token_2_idx + length - 1].location_as_dict(),
+                                'end_token_2': last_token_2_location,
                             })
         return readable_matches
     
