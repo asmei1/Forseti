@@ -17,7 +17,16 @@ from pl.forseti.report_generation.report_generation_config import ReportGenerati
 
 def get_available_number_of_cores():
     return multiprocessing.cpu_count() - 1 if multiprocessing.cpu_count() - 1 else 1
-
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+    
 class CommandLineApp:
 
     def __init__(self, sys_args) -> None:
@@ -44,30 +53,29 @@ class CommandLineApp:
             help='If folder scanning was enabled, application will look for files with fit to one of the patterns.',
             required=False)
 
-        processing_options = self.parser.add_argument_group(
-            'processing programs configuration')
+        processing_options = self.parser.add_argument_group('processing programs configuration')
         processing_options.add_argument('--n_processors', type=int, required=False, default=get_available_number_of_cores(),
                                         help="Number of processors used in programs tokenization. Value -1 means that all available processors will be used.")
-        processing_options.add_argument('--filter_struct_declaration', type=bool, required=False, default=True,
+        processing_options.add_argument('--filter_struct_declaration', type=str2bool, nargs='?', const=True,required=False, default=True,
                                         help="Defines, if tokens related structure declaration should be filtered.")
-        processing_options.add_argument('--filter_function_declaration', type=bool, required=False, default=True,
+        processing_options.add_argument('--filter_function_declaration', type=str2bool, nargs='?', const=True,required=False, default=True,
                                         help="Defines, if structure declaration should be filtered.")
-        processing_options.add_argument('--filter_aliasses', type=bool, required=False, default=True,
+        processing_options.add_argument('--filter_aliasses', type=str2bool, nargs='?', const=True,required=False, default=True,
                                         help="Defines, if alias (typedef) should be filtered.")
-        processing_options.add_argument('--filter_mixed_declarations', type=bool, required=False, default=True,
+        processing_options.add_argument('--filter_mixed_declarations', type=str2bool, nargs='?', const=True,required=False, default=True,
                                         help="""Defines, if cursors for mixing declarations with statments or expressions(DECL_STMT) should be filtered. 
                                         In most cases they should be, due to noise which are introduced in sequence.""")
-        processing_options.add_argument('--filter_brackets', type=bool, required=False, default=True,
+        processing_options.add_argument('--filter_brackets', type=str2bool, nargs='?', const=True,required=False, default=True,
                                         help="Defines, if brackets from compund statments - {statment; stamtent;} should be filtered. In most cases yes, due to noise reduction.")
-        processing_options.add_argument('--filter_parent_expression', type=bool, required=False, default=True,
+        processing_options.add_argument('--filter_parent_expression', type=str2bool, nargs='?', const=True,required=False, default=True,
                                         help="Defines, if parent expression should be filtered. Parent expression for example is int var = (x + y).")
 
 
         report_generation_options = self.parser.add_argument_group('report generation configuration')
-        report_generation_options.add_argument('--generate_heatmap_for_whole_programs', type=bool, default=False, required=False)
-        report_generation_options.add_argument('--generate_heatmap_for_code_units', type=bool, default=False, required=False)
-        report_generation_options.add_argument('--generate_jsons', type=bool, default=True, required=False)
-        report_generation_options.add_argument('--generate_html_diffs', type=bool, default=True, required=False)
+        report_generation_options.add_argument('--generate_heatmap_for_whole_programs', type=str2bool, nargs='?', const=True,default=False, required=False)
+        report_generation_options.add_argument('--generate_heatmap_for_code_units', type=str2bool, nargs='?', const=True,default=False, required=False)
+        report_generation_options.add_argument('--generate_jsons', type=str2bool, nargs='?', const=True,default=True, required=False)
+        report_generation_options.add_argument('--generate_html_diffs', type=str2bool, nargs='?', const=True,default=True, required=False)
         report_generation_options.add_argument('--output_path', type=str, required=True)
         report_generation_options.add_argument('--minimal_similarity_threshold', type=float, required=False, default=0.5)
         report_generation_options.add_argument('--maximal_similarity_threshold', type=float, required=False, default=1.0)
@@ -76,8 +84,13 @@ class CommandLineApp:
         algorithm_options = self.parser.add_argument_group('detection algorithm configuration')
         algorithm_options.add_argument('--minimal_search_length', type=int, default=8, required=False)
         algorithm_options.add_argument('--initial_search_length', type=int, default=20, required=False)
-        algorithm_options.add_argument('--compare_function_names_in_function_calls', type=bool, default=True, required=False)
-        algorithm_options.add_argument('--distinguish_operators_symbols', type=bool, default=True, required=False)
+        algorithm_options.add_argument('--compare_function_names_in_function_calls', type=str2bool, nargs='?', const=True,default=True, required=False)
+        algorithm_options.add_argument('--distinguish_operators_symbols', type=str2bool, nargs='?', const=True,default=True, required=False)
+        algorithm_options.add_argument('--unroll_ast', type=str2bool, nargs='?', const=True,default=True, required=False)
+        algorithm_options.add_argument('--remove_unrolled_function', type=str2bool, nargs='?', const=True,default=True, required=False)
+        algorithm_options.add_argument('--unroll_only_simple_functions', type=str2bool, nargs='?', const=True,default=True, required=False)
+        algorithm_options.add_argument('--compare_whole_program', type=str2bool, nargs='?', const=True,default=False, required=False)
+        algorithm_options.add_argument('--max_number_of_differences_in_single_comparison_pair', type=int, default=-1, required=False)
         algorithm_options.add_argument('--selected_programs_to_compare', nargs='+', required=False, default=[])
 
         self.__args = self.parser.parse_args(args=sys_args)
@@ -102,6 +115,11 @@ class CommandLineApp:
         config.initial_search_length = self.__args.initial_search_length
         config.distinguish_operators_symbols = self.__args.distinguish_operators_symbols
         config.compare_function_names_in_function_calls = self.__args.compare_function_names_in_function_calls
+        config.unroll_ast = self.__args.unroll_ast
+        config.unroll_only_simple_functions = config.unroll_ast and self.__args.unroll_only_simple_functions
+        config.remove_unrolled_function = config.unroll_ast and self.__args.remove_unrolled_function
+        config.compare_whole_program = self.__args.compare_whole_program
+        config.max_number_of_differences_in_single_comparison_pair = self.__args.max_number_of_differences_in_single_comparison_pair
         return config
     
     def args_to_report_generation_config(self):
