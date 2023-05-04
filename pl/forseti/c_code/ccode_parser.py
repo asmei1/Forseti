@@ -27,7 +27,8 @@ class CCodeParser(CodeParser):
             index = Index.create()
             
             # parse file
-            translation_units.append(index.parse(path=filename, unsaved_files=filenames_with_src_codes))
+            # Here I also added NULL definition - because I skip all standard includes, it's recognized by libcland
+            translation_units.append(index.parse(path=filename, unsaved_files=filenames_with_src_codes, args=['-D NULL=0']))
         return translation_units
     
     def __parse_program_from_file__(self, program: Program):
@@ -40,7 +41,8 @@ class CCodeParser(CodeParser):
             index = Index.create()
             
             # parse file
-            translation_units.append(index.parse(path=filename))
+            # Here I also added NULL definition - because I skip all standard includes, it's recognized by libcland
+            translation_units.append(index.parse(path=filename, args=['-D NULL=0']))
         return translation_units
     
     def __filter_translation_units__(self, translation_units: List, program_filenames: List[str]):
