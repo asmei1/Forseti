@@ -130,11 +130,16 @@ def __get_preformat_info(comparison_results, prefix, filename):
     return data
             
     
-def __get_html_body__(comparison_results, files_1, files_2):
+def __get_html_body__(overall_similarity, comparison_results, files_1, files_2):
     html = ""
-    html += '''
+    html += f'''
     <div class="row">
-        <div class="left" id="similarity_list"><ol>_________similarity_list_________</ol></div>
+        <div class="left" id="similarity_list">
+            <p>Overall similarity: {overall_similarity}</p>
+            <ol>
+                _________similarity_list_________
+            </ol>
+        </div>
         <div class="middle diff" id="files_1">_________1_files_1_________</div>
         <div class="right diff" id="files_2">_________2_files_2_________</div>
     </div>
@@ -143,6 +148,7 @@ def __get_html_body__(comparison_results, files_1, files_2):
     for comparison_index, comparison in enumerate(comparison_results):
         name_token_1 = comparison['code_unit_1']['first_token_name']
         name_token_2 = comparison['code_unit_2']['first_token_name']
+        similarity = comparison['similarity']
         for index, localization in enumerate(comparison['localization']):
             start_1 = localization['start_token_1']['line'] 
             end_1 = localization['end_token_1']['line']  
@@ -153,7 +159,17 @@ def __get_html_body__(comparison_results, files_1, files_2):
 
             label = f"{start_1:>3}:{end_1:>3} | {start_2:>3}:{end_2:>3} | {length}"
             
-            similarity_list_html += f'''<pre><li class="s_{comparison_index}_{index}">{name_token_1}<br>{name_token_2}<br>{label}</li></pre>'''  
+            similarity_list_html += f'''
+            <li class="s_{comparison_index}_{index}">
+                <div style="font-family: Monospace;">
+                    {name_token_1}<br>
+                    {name_token_2}<br>
+                </div>
+                Fragment similarity: {similarity}<br>
+                Localization: {label}
+            </li>
+            '''
+    
     html = html.replace("_________similarity_list_________", similarity_list_html)
 
     files_page = ""
@@ -298,7 +314,7 @@ def generate_html_diff_page(filename, output_file):
 
     html = ""
     html += f'''<html>{__get_html_head__()}'''
-    html += f'''<body>{__get_html_body__(comparison_results, files_1, files_2)}</body>'''
+    html += f'''<body>{__get_html_body__(data['overall_similarity'], comparison_results, files_1, files_2)}</body>'''
     html += f'''<script>{__get_script_part__()}</script>'''
     html += '''</html>'''
     
