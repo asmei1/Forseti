@@ -171,7 +171,10 @@ class ClangASTConverter:
             token.name = self.__get_binary_op_token__(clang_cursor)
         elif token.token_kind == TokenKind.UnaryOp or token.token_kind == TokenKind.CompoundAssigmentOp:
             token.name = self.__get_unary_or_compound_op_token__(clang_cursor)
-
+        elif token.token_kind == TokenKind.Break:
+            token.name = "break"
+        elif token.token_kind == TokenKind.Continue:
+            token.name = "continue"
         if token.variable_token_kind in [VariableTokenKind.Numeric, VariableTokenKind.FloatingPoint]:
             if token.token_kind not in [TokenKind.VariableDecl, TokenKind.BinaryOp, TokenKind.UnaryOp]:
                 token.name = self.__get_numeric_literal__(clang_cursor)
