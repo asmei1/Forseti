@@ -6,16 +6,15 @@ def __load_file(filename):
     with open(filename, 'r', encoding='latin-1') as file:
         return file.readlines()
 
-def __to_html_snippet(format_data, prefix, file_index, code):    
+def __to_html_snippet(format_data, code):    
     snippet = code
 
     added = {}
     for (comparison_index, index), (start_line, start_col, end_line, end_col) in format_data.items():
         for line_index in range(start_line, end_line + 1):
             span_class = f"""{comparison_index}_{index}"""
-            start_token = f'_________start_{span_class}_________'
-            end_token = '_________end_________'
-            number_of_added_chars = len(start_token) + len(end_token)
+            start_token = f'|_________start_{span_class}_________|'
+            end_token = '|_________end_________|'
 
             offset = 0
             end_offset = -1
@@ -27,14 +26,18 @@ def __to_html_snippet(format_data, prefix, file_index, code):
                     if addings[0] <= start_col:
                         offset += addings[1] 
                 offset += start_col
-                added[line_index].append((start_col, number_of_added_chars))
+                added[line_index].append((offset, len(start_token)))
             elif line_index == end_line:
-                end_offset = end_col
-                added[line_index].append((end_col, number_of_added_chars))
+                for addings in added[line_index]:
+                    if addings[0] <= end_col:
+                        end_offset += addings[1] 
+                end_offset += end_col + 1
+                added[line_index].append((start_col, len(start_token)))
+                added[line_index].append((end_offset, len(end_token)))
             else:
                 for addings in added[line_index]:
                     offset += addings[1] 
-                added[line_index].append((0, number_of_added_chars))
+                added[line_index].append((0, len(start_token)))
             
             l = list(code[line_index])
             l.insert(offset, start_token)
@@ -44,8 +47,8 @@ def __to_html_snippet(format_data, prefix, file_index, code):
     remove_forbidden_tags = lambda x: x.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     snippet = list(map(remove_forbidden_tags, snippet))
     snippet = "".join([f"<code>{line}</code>" for line in snippet])
-    snippet = re.sub('_________start_(\d+_\d+)_________', '<span class="s_\\1 modified">', snippet)
-    snippet = re.sub('_________end_________', '</span>', snippet)
+    snippet = re.sub(r'\|_________start_(\d+_\d+)_________\|', '<span class="s_\\1 modified">', snippet)
+    snippet = re.sub(r'\|_________end_________\|', '</span>', snippet)
     return snippet
 
 def __get_html_head__():
@@ -160,7 +163,7 @@ def __get_html_body__(comparison_results, files_1, files_2):
 
         format_data = __get_preformat_info(comparison_results, 1, path)
 
-        snippet = __to_html_snippet(format_data, 1, file_index, code)
+        snippet = __to_html_snippet(format_data, code)
 
         content = f"""<div class="raw_code"><pre>{snippet}</pre></div>"""
         files_page += path_label + content
@@ -175,7 +178,7 @@ def __get_html_body__(comparison_results, files_1, files_2):
 
         format_data = __get_preformat_info(comparison_results, 2, path)
 
-        snippet = __to_html_snippet(format_data, 2, file_index, code)
+        snippet = __to_html_snippet(format_data, code)
 
         content = f"""<div class="raw_code"><pre>{snippet}</pre></div>"""
         files_page += path_label + content
