@@ -344,13 +344,13 @@ class ReportGenerator:
     def generate_code_unit_metrics(self):
         results, _ = self.get_comparison_results()
         metrics = {}
-        for comparison_name, comp in results:
+        for _, comp in results:
             for raw in comp['raw_comparison_results']:
                 if raw['similarity'] >= self.__similarity_threshold:
-                    key = raw['code_unit_1']['first_token_name'] + " " + raw['code_unit_2']['first_token_name']
+                    key = raw['code_unit_1']['first_token_name'] + "|" + raw['code_unit_2']['first_token_name']
                     if key not in metrics:
                         metrics[key] = []    
-                    metrics[key].append((comparison_name, raw['similarity']))
+                    metrics[key].append((comp['author_1'], comp['author_2'], raw['similarity']))
         return metrics
         
 

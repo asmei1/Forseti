@@ -21,7 +21,6 @@ def str2bool(v):
 
 def configure_arg_parser(parser):
     parser.add_argument(
-        '-log',
         '--loglevel',
         default='warning',
         help=
