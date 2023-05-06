@@ -1,10 +1,4 @@
-import json
-from bs4 import BeautifulSoup
 import re
-
-def __load_file(filename):
-    with open(filename, 'r', encoding='latin-1') as file:
-        return file.readlines()
 
 def __to_html_snippet(format_data, code):    
     snippet = code
@@ -12,43 +6,24 @@ def __to_html_snippet(format_data, code):
     added = {}
     for (comparison_index, index), (start_line, start_col, end_line, end_col) in format_data.items():
         for line_index in range(start_line, end_line + 1):
-            span_class = f"""{comparison_index}_{index}"""
-            start_token = f'|_________start_{span_class}_________|'
+            start_token = f'|_________start_{comparison_index}_{index}_________|'
             end_token = '|_________end_________|'
 
-            offset = 0
-            end_offset = -1
-            if line_index not in added:
-                added[line_index] = []
-
-            if line_index == start_line:
-                for addings in added[line_index]:
-                    if addings[0] <= start_col:
-                        offset += addings[1] 
-                offset += start_col
-                added[line_index].append((offset, len(start_token)))
-            elif line_index == end_line:
-                for addings in added[line_index]:
-                    if addings[0] <= end_col:
-                        end_offset += addings[1] 
-                end_offset += end_col + 1
-                added[line_index].append((start_col, len(start_token)))
-                added[line_index].append((end_offset, len(end_token)))
-            else:
-                for addings in added[line_index]:
-                    offset += addings[1] 
-                added[line_index].append((0, len(start_token)))
-            
             l = list(code[line_index])
-            l.insert(offset, start_token)
-            l.insert(end_offset, end_token)
+            l.insert(0, start_token)
+            l.append(end_token)
             code[line_index] = ''.join(l)
     
     remove_forbidden_tags = lambda x: x.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     snippet = list(map(remove_forbidden_tags, snippet))
     snippet = "".join([f"<code>{line}</code>" for line in snippet])
-    snippet = re.sub(r'\|_________start_(\d+_\d+)_________\|', '<span class="s_\\1 modified">', snippet)
-    snippet = re.sub(r'\|_________end_________\|', '</span>', snippet)
+    start_token_regex = r'\|_________start_(\d+_\d+)_________\|'
+    end_token_regex = r'\|_________end_________\|'
+    while re.findall(start_token_regex, snippet):
+        snippet = re.sub(start_token_regex, '<span class="s_\\1 modified">', snippet)
+        
+    while re.findall(end_token_regex, snippet):
+        snippet = re.sub(end_token_regex, '</span>', snippet)
     return snippet
 
 def __get_html_head__():
@@ -130,12 +105,16 @@ def __get_preformat_info(comparison_results, prefix, filename):
     return data
             
     
-def __get_html_body__(overall_similarity, comparison_results, files_1, files_2):
+def __get_html_body__(data, files_1, files_2):
+    comparison_results = data['raw_comparison_results']
+
     html = ""
     html += f'''
     <div class="row">
         <div class="left" id="similarity_list">
-            <p>Overall similarity: {overall_similarity}</p>
+            <p>Overall similarity: {data['overall_similarity']:.3f}</p>
+            <p>Left program overlap: {data['program_1_overlap']:.3f}</p>
+            <p>Right program overlap: {data['program_2_overlap']:.3f}</p>
             <ol>
                 _________similarity_list_________
             </ol>
@@ -165,7 +144,7 @@ def __get_html_body__(overall_similarity, comparison_results, files_1, files_2):
                     {name_token_1}<br>
                     {name_token_2}<br>
                 </div>
-                Fragment similarity: {similarity}<br>
+                Fragment similarity: {similarity:.3f}<br>
                 Localization: {label}
             </li>
             '''
@@ -299,24 +278,12 @@ def __get_script_part__():
     addListenersPanels(list, right_panel, left_panel);
     """
 
-def generate_html_diff_page(filename, output_file):
-    with open(filename, 'r') as f:
-        data = json.load(f)
-
-    comparison_results = data['raw_comparison_results']
-
-    files_1 = {}
-    files_2 = {}
-    for f in data['filenames_1']:
-        files_1[f] =  __load_file(f)
-    for f in data['filenames_2']:
-        files_2[f] =  __load_file(f)
+def generate_html_diff_page(data, files_1, files_2):
 
     html = ""
     html += f'''<html>{__get_html_head__()}'''
-    html += f'''<body>{__get_html_body__(data['overall_similarity'], comparison_results, files_1, files_2)}</body>'''
+    html += f'''<body>{__get_html_body__(data, files_1, files_2)}</body>'''
     html += f'''<script>{__get_script_part__()}</script>'''
     html += '''</html>'''
     
-    with open(output_file, 'w', encoding='utf8') as file:
-        file.write(html)
+    return html
