@@ -2,28 +2,54 @@ import re
 
 def __to_html_snippet(format_data, code):    
     snippet = code
-
+    
     added = {}
     for (comparison_index, index), (start_line, start_col, end_line, end_col) in format_data.items():
         for line_index in range(start_line, end_line + 1):
-            start_token = f'|_________start_{comparison_index}_{index}_________|'
-            end_token = '|_________end_________|'
+            start_token = f'##__##start_{comparison_index}_{index}##__##'
+            end_token = '##__##end##__##'
+
+            offset = 0
+            end_offset = 0
+            if line_index not in added:
+                added[line_index] = []
+
+            if line_index == start_line and line_index != end_line:
+                for addings in added[line_index]:
+                    if addings[0] <= start_col:
+                        offset += addings[1] 
+                offset += start_col
+                added[line_index].append((start_col, len(start_token)))
+            elif line_index == end_line:
+                if line_index == start_line:
+                    for addings in added[line_index]:
+                        if addings[0] <= start_col:
+                            offset += addings[1] 
+                    offset += start_col
+
+                for addings in added[line_index]:
+                    if addings[0] <= end_col:
+                        end_offset += addings[1] 
+                end_offset += end_col + 1
+                added[line_index].append((start_col, len(start_token)))
+                added[line_index].append((end_col, len(end_token)))
+            else:
+                # for addings in added[line_index]:
+                #     offset += addings[1] 
+                added[line_index].append((0, len(start_token)))
 
             l = list(code[line_index])
-            l.insert(0, start_token)
-            l.append(end_token)
+            l.insert(offset, start_token)
+            l.insert(end_offset if end_offset else len(l), end_token)
             code[line_index] = ''.join(l)
     
     remove_forbidden_tags = lambda x: x.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     snippet = list(map(remove_forbidden_tags, snippet))
     snippet = "".join([f"<code>{line}</code>" for line in snippet])
-    start_token_regex = r'\|_________start_(\d+_\d+)_________\|'
-    end_token_regex = r'\|_________end_________\|'
-    while re.findall(start_token_regex, snippet):
-        snippet = re.sub(start_token_regex, '<span class="s_\\1 modified">', snippet)
-        
-    while re.findall(end_token_regex, snippet):
-        snippet = re.sub(end_token_regex, '</span>', snippet)
+    start_token_regex = r'##__##start_(\d+_\d+)##__##'
+    end_token_regex = r'##__##end##__##'
+    snippet = re.sub(start_token_regex, '<span class="s_\\1 modified">', snippet)
+    snippet = re.sub(end_token_regex, '</span>', snippet)
     return snippet
 
 def __get_html_head__():
@@ -116,11 +142,11 @@ def __get_html_body__(data, files_1, files_2):
             <p>Left program overlap: {data['program_1_overlap']:.3f}</p>
             <p>Right program overlap: {data['program_2_overlap']:.3f}</p>
             <ol>
-                _________similarity_list_________
+                ###similarity_list###
             </ol>
         </div>
-        <div class="middle diff" id="files_1">_________1_files_1_________</div>
-        <div class="right diff" id="files_2">_________2_files_2_________</div>
+        <div class="middle diff" id="files_1">###1_files_1###</div>
+        <div class="right diff" id="files_2">###2_files_2###</div>
     </div>
     '''
     similarity_list_html = ""
@@ -149,7 +175,7 @@ def __get_html_body__(data, files_1, files_2):
             </li>
             '''
     
-    html = html.replace("_________similarity_list_________", similarity_list_html)
+    html = html.replace("###similarity_list###", similarity_list_html)
 
     files_page = ""
     file_index = 0
@@ -164,7 +190,7 @@ def __get_html_body__(data, files_1, files_2):
         files_page += path_label + content
         file_index += 1
 
-    html = html.replace("_________1_files_1_________", files_page)
+    html = html.replace("###1_files_1###", files_page)
     
     files_page = ""
     file_index = 0
@@ -179,7 +205,7 @@ def __get_html_body__(data, files_1, files_2):
         files_page += path_label + content
         file_index += 1
 
-    html = html.replace("_________2_files_2_________", files_page)
+    html = html.replace("###2_files_2###", files_page)
 
     return html
 
