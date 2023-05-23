@@ -211,6 +211,21 @@ def __get_html_body__(data, files_1, files_2):
 
 def __get_script_part__():
     return """
+    
+    function addScrollOnClick(item, panel1, panel2){
+        item.addEventListener('click', ()=> {
+            item.classList.forEach((item) => {
+                if (item != "highlighted" && item != "modified" ){
+                    panel1.querySelector("span." + item).scrollIntoView({ behavior: 'auto', block: 'center', inline: 'center' });
+                    panel1.scrollLeft = 0 
+                    panel2.querySelector("span." + item).scrollIntoView({ behavior: 'auto', block: 'center', inline: 'center' });
+                    panel2.scrollLeft = 0 
+                
+                }
+            });
+        });
+    }
+
     function addListeners(panel_list, left_panel, right_panel) {
       // Add event listeners to each list item
       panel_list.querySelectorAll('li').forEach((list_item) => {
@@ -219,22 +234,12 @@ def __get_script_part__():
             const itemClass = list_item.getAttribute('class');
             // Highlight the corresponding items in the other panels
             panel_list.querySelectorAll("li." + itemClass).forEach((item) => {
-                if (!item.classList.contains('highlighted')){
-                    item.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'start' })
-                }
-
                 item.classList.add('highlighted');
             });
             right_panel.querySelectorAll("span." + itemClass).forEach((item) => {
-                if (!item.classList.contains('highlighted')){
-                    item.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'start' });
-                }
                 item.classList.add('highlighted');
             });
             left_panel.querySelectorAll("span." + itemClass).forEach((item) => {
-                if (!item.classList.contains('highlighted')){
-                    item.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'start' });
-                }
                 item.classList.add('highlighted');
             });
         });
@@ -251,6 +256,8 @@ def __get_script_part__():
                 item.classList.remove('highlighted');
             });
         });
+        
+        addScrollOnClick(list_item, left_panel, right_panel);
       });
     }
     function addListenersPanels(panel_list, panel1, panel2) {
@@ -261,21 +268,12 @@ def __get_script_part__():
             const itemClass = item.getAttribute('class').slice(0, -9);
             // Highlight the corresponding items in the other panels
             panel_list.querySelectorAll("li." + itemClass).forEach((item) => {
-                if (!item.classList.contains('highlighted')){
-                    item.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'start' });
-                }
                 item.classList.add('highlighted');
             });
             panel1.querySelectorAll("span." + itemClass).forEach((item) => {
-                if (!item.classList.contains('highlighted')){
-                    item.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'start' });
-                }
                 item.classList.add('highlighted');
             });
             panel2.querySelectorAll("span." + itemClass).forEach((item) => {
-                if (!item.classList.contains('highlighted')){
-                    item.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'start' });
-                }
                 item.classList.add('highlighted');
             });
         });
@@ -292,6 +290,7 @@ def __get_script_part__():
                 item.classList.remove('highlighted');
             });
         });
+        addScrollOnClick(item, panel1, panel2);
       });
     }
     
