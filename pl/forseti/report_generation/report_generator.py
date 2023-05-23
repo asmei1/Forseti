@@ -94,23 +94,31 @@ class ReportGenerator:
 
     def __proces_comparison_results__(self):
         grouped_results = {}
+        counter = {}
         for result in self.__comparison_results:
             key = (result.pair.program_a.author, result.pair.program_b.author) 
-            if key not in grouped_results and result.result:
-                grouped_results[key] = {}
-                grouped_results[key]['code_units'] = []
-                grouped_results[key]['similarity'] = 0.0
-                grouped_results[key]['length'] = 0
+            if key not in grouped_results:
+                counter[key] = 0
+                if result.result:
+                    grouped_results[key] = {}
+                    grouped_results[key]['code_units'] = []
+                    grouped_results[key]['similarity'] = 0.0
+                    grouped_results[key]['length'] = 0
+
             if result.result:
                 r = {}
                 r['raw'] = result
                 r['similarity'] = 0.0
                 r['length'] = 0
                 grouped_results[key]['code_units'].append(r)
+                counter[key] += 1
+            elif self.__report_generation_config.assign_functions_based_on_types:
+                counter[key] += 1
+
         
         similarities = []
         longest_sequences = []
-        for _, results in grouped_results.items():
+        for key, results in grouped_results.items():
             similarity = 0.0
             program_1_overlap_factor = 0.0
             program_2_overlap_factor = 0.0
@@ -133,9 +141,12 @@ class ReportGenerator:
                 longest_sequence = max([longest_sequence, current_longest_match])
             
 
-            similarity = similarity / len(results['code_units'])
-            program_1_overlap_factor = program_1_overlap_factor / len(results['code_units'])
-            program_2_overlap_factor = program_2_overlap_factor / len(results['code_units'])
+            # similarity = similarity / len(results['code_units'])
+            # program_1_overlap_factor = program_1_overlap_factor / len(results['code_units'])
+            # program_2_overlap_factor = program_2_overlap_factor / len(results['code_units'])
+            similarity = similarity / counter[key]
+            program_1_overlap_factor = program_1_overlap_factor / counter[key]
+            program_2_overlap_factor = program_2_overlap_factor / counter[key]
             similarities.append(similarity)
             longest_sequences.append(longest_sequence)
             

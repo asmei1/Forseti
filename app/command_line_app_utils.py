@@ -64,6 +64,7 @@ def configure_arg_parser(parser):
     algorithm_options.add_argument('--remove_unrolled_function', type=str2bool, nargs='?', const=True,default=True, required=False)
     algorithm_options.add_argument('--unroll_only_simple_functions', type=str2bool, nargs='?', const=True,default=True, required=False)
     algorithm_options.add_argument('--compare_whole_program', type=str2bool, nargs='?', const=True,default=False, required=False)
+    algorithm_options.add_argument('--assign_functions_based_on_types', type=str2bool, nargs='?', const=True,default=True, required=False)
     algorithm_options.add_argument('--max_number_of_differences_in_single_comparison_pair', type=int, default=-1, required=False)
     algorithm_options.add_argument('--selected_programs_to_compare', nargs='+', required=False, default=[])
 
@@ -90,6 +91,7 @@ def args_to_detection_config(args):
     config.remove_unrolled_function = args.unroll_ast and args.remove_unrolled_function
     config.compare_whole_program = args.compare_whole_program
     config.max_number_of_differences_in_single_comparison_pair = args.max_number_of_differences_in_single_comparison_pair
+    config.assign_functions_based_on_types = args.assign_functions_based_on_types
     return config
 
 def args_to_report_generation_config(args):
@@ -102,6 +104,7 @@ def args_to_report_generation_config(args):
     config.n_processors = args.n_processors
     config.minimal_similarity_threshold = args.minimal_similarity_threshold
     config.maximal_similarity_threshold = args.maximal_similarity_threshold
+    config.assign_functions_based_on_types = args.assign_functions_based_on_types
     return config
 
 def set_logging_level(args):
