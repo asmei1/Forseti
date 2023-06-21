@@ -89,6 +89,10 @@ class UnrollCodeUnits:
                         if root_token.name == candidate_function_token.name and root_token.type_name == candidate_function_token.type_name:
                             logging.debug("Recursive unrolling is not supported now!")
                             continue
+                        
+                        if len(function_call_token.children) == 0:
+                            continue
+
                         if function_call_token.children[0].type_name == candidate_function_token.type_name:
                             unrolled_tokens.append((function_call_token, candidate_function_token))
 

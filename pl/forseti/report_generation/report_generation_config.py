@@ -9,5 +9,4 @@ class ReportGenerationConfig:
     generate_code_unit_metrics: bool = True
     n_processors: int = 1
     assign_functions_based_on_types: bool = True
-    minimal_similarity_threshold: float = 0.5
-    maximal_similarity_threshold: float = 1.0
+    output_path: str = ""

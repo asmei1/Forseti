@@ -4,6 +4,7 @@ import multiprocessing
 from pl.forseti.detection_config import DetectionConfig
 from pl.forseti.c_code.ccode_filter import CCodeFilterConfig
 from pl.forseti.report_generation.report_generation_config import ReportGenerationConfig
+from pl.forseti.comparison_results_processor import ComparisonResultsProcessorConfig
 
 
 def get_available_number_of_cores():
@@ -94,6 +95,13 @@ def args_to_detection_config(args):
     config.assign_functions_based_on_types = args.assign_functions_based_on_types
     return config
 
+def args_to_comparison_results_processor_config(args):
+    config = ComparisonResultsProcessorConfig()
+    config.assign_functions_based_on_types = args.assign_functions_based_on_types
+    config.minimal_similarity_threshold = args.minimal_similarity_threshold
+    config.maximal_similarity_threshold = args.maximal_similarity_threshold
+    return config
+
 def args_to_report_generation_config(args):
     config = ReportGenerationConfig()
     config.generate_heatmap_for_whole_programs = args.generate_heatmap_for_whole_programs 
@@ -102,9 +110,8 @@ def args_to_report_generation_config(args):
     config.generate_html_diffs = args.generate_html_diffs
     config.generate_code_unit_metrics = args.generate_code_unit_metrics
     config.n_processors = args.n_processors
-    config.minimal_similarity_threshold = args.minimal_similarity_threshold
-    config.maximal_similarity_threshold = args.maximal_similarity_threshold
     config.assign_functions_based_on_types = args.assign_functions_based_on_types
+    config.output_path = args.output_path
     return config
 
 def set_logging_level(args):

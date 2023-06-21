@@ -31,7 +31,7 @@ class ComparisonPairsGenerator:
                 for code_unit in program.code_units:
                     asts.append((program, code_unit.ast))
 
-
+        asts = sorted(asts, key=lambda x: (x[0].author, x[1][0].name), reverse=True)
         comparison_pairs: List[ComparisonPair] = []
         for pair in itertools.combinations(asts, 2):
             (program_a, ast_a), (program_b, ast_b) = pair

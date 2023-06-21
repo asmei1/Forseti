@@ -5,6 +5,7 @@ class TokenKind:
     """Represents cursor kind."""
     cursor_type_counter: int = 0
     cursors_unique_list_of_short_names: List[str] = []
+    token_kind_list: List['TokenKind'] = [] 
 
     def __init__(self, name: str, unique_short_name: str) -> None:
         self._name = name
@@ -14,6 +15,7 @@ class TokenKind:
 
         self.__check_if_short_name_exists__(unique_short_name)
         TokenKind.cursors_unique_list_of_short_names.append(unique_short_name)
+        TokenKind.token_kind_list.append(self)
 
     @property
     def name(self) -> str:

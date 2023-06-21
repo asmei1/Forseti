@@ -1,12 +1,15 @@
 import logging
 import time
-from typing import List
+from typing import List, Dict
+from scipy.stats import ks_2samp
+import numpy as np
 
 from .comparison_pair import ComparisonPair
 from .comparison_pairs_generator import ComparisonPairsGenerator
 from .comparison_result import ComparisonResult
 from .detection.rkr_gst import rkr_gst
 from .detection.tiles_manager import TilesManager
+from .detection.greedy_string_tiling import scored_string_tilling
 from .detection_config import DetectionConfig
 from .flatten_code_units import FlattenCodeUnits
 from .token import Token, TokenKind
@@ -36,48 +39,6 @@ class DetectionEngine:
         return False
     
     @staticmethod
-    def convert_raw_matches(matches, pattern: TilesManager, source: TilesManager):
-        if not matches:
-            return None
-        readable_matches = []
-        for m in matches:
-            length = m['length']
-            token_1_idx = m['position_of_token_1'] 
-            token_2_idx = m['position_of_token_2'] 
-            token_1_end_idx = token_1_idx + length - 1
-            token_2_end_idx = token_2_idx + length - 1
-            last_token_1 = pattern.tokens[token_1_end_idx]
-            last_token_1_location = last_token_1.location_as_dict()
-            last_token_1_location['column'] += len(pattern.tokens[token_1_end_idx].name)
-
-            last_token_2 = source.tokens[token_2_end_idx]
-            last_token_2_location = last_token_2.location_as_dict()
-            last_token_2_location['column'] += len(source.tokens[token_2_end_idx].name)
-
-            
-            for i in range(max(token_1_end_idx-10, token_1_idx), token_1_end_idx):
-                location_candidate = pattern.tokens[i].location
-                if location_candidate.line >= last_token_1_location['line'] and location_candidate.column + len(pattern.tokens[i].name) >= last_token_1_location['column']:
-                    last_token_1_location = pattern.tokens[i].location_as_dict()
-                    last_token_1_location['column'] += len(pattern.tokens[i].name)
-
-            for i in range(max(token_2_end_idx-10, token_2_idx), token_2_end_idx):
-                location_candidate = source.tokens[i].location
-                if location_candidate.line >= last_token_2_location['line'] and location_candidate.column + len(source.tokens[i].name) >= last_token_2_location['column']:
-                    last_token_2_location = source.tokens[i].location_as_dict()
-                    last_token_2_location['column'] += len(source.tokens[i].name)
-
-
-            readable_matches.append({
-                                'start_token_1': pattern.tokens[token_1_idx].location_as_dict(),
-                                'length': length,
-                                'end_token_1': last_token_1_location,
-                                'start_token_2': source.tokens[token_2_idx].location_as_dict(),
-                                'end_token_2': last_token_2_location,
-                            })
-        return readable_matches
-    
-    @staticmethod
     def compare_tokens(config_and_comparison_pair):
         config, comparison_pair = config_and_comparison_pair
         distinguish_operators_symbols, compare_function_names_in_function_calls, minimal_search_length, initial_search_length = config
@@ -90,8 +51,9 @@ class DetectionEngine:
         logging.debug("analyzing comparison pair...")
         start_time = time.process_time()
         token_comparison_function = lambda token_a, token_b: DetectionEngine.token_comparison_function(distinguish_operators_symbols, compare_function_names_in_function_calls, token_a, token_b)
-        raw_matches = rkr_gst(tiles_a, tiles_b, minimal_search_length, initial_search_length, DetectionEngine.get_sequence_from_tokens, token_comparison_function)
-        matches = DetectionEngine.convert_raw_matches(raw_matches, tiles_a, tiles_b)
+        matches = rkr_gst(tiles_a, tiles_b, minimal_search_length, initial_search_length, DetectionEngine.get_sequence_from_tokens, token_comparison_function)
+        # matches, marks_a, marks_b = scored_string_tilling(tokens_a, tokens_b, minimal_search_length, compare_function=token_comparison_function)
+        # return ComparisonResult(comparison_pair, matches, marks_a, marks_b)
         logging.debug(f"done {time.process_time() - start_time} ...")
         return ComparisonResult(comparison_pair, matches, tiles_a.marks, tiles_b.marks)
     
@@ -103,10 +65,39 @@ class DetectionEngine:
             logging.info("flattening program...")
             tokenized_program = FlattenCodeUnits.flatten(tokenized_program)
 
-        logging.info("generating comparison pair pairs...")
+        logging.info("generating comparison pairs...")
         comparison_pairs_generator = ComparisonPairsGenerator(config.compare_whole_program, config.max_number_of_differences_in_single_comparison_pair, config.assign_functions_based_on_types)
+        pairs = comparison_pairs_generator.generate(tokenized_programs, selected_programs_to_compare)
+        filtered_pairs: List[ComparisonPair] = []
+        
+        for p in pairs:
+            a:List[Token] = p.tokens_a
+            b:List[Token] = p.tokens_b
 
-        return comparison_pairs_generator.generate(tokenized_programs, selected_programs_to_compare)
+            histogram_a: Dict[TokenKind, int] = dict.fromkeys(TokenKind.cursors_unique_list_of_short_names, 0)
+            histogram_b: Dict[TokenKind, int] = dict.fromkeys(TokenKind.cursors_unique_list_of_short_names, 0)
+
+            for t in a:
+                if t.token_kind.short_name not in histogram_a:
+                    histogram_a[t.token_kind.short_name] = 0
+                histogram_a[t.token_kind.short_name] += 1
+            
+
+            for t in b:
+                if t.token_kind.short_name not in histogram_b:
+                    histogram_b[t.token_kind.short_name] = 0
+                histogram_b[t.token_kind.short_name] += 1
+            np_a = np.fromiter(histogram_a.values(), dtype=int)
+            np_b = np.fromiter(histogram_a.values(), dtype=int)
+
+            if ks_2samp(np_a, np_b).pvalue > 0.5:
+                filtered_pairs.append(p)
+
+
+        
+        logging.info("(%,%) pairs are left after filtering using ks test", len(pairs), len(filtered_pairs))
+
+        return filtered_pairs
 
 
     def analyze(self, tokenized_programs: List[TokenizedProgram], config: DetectionConfig = DetectionConfig(), selected_programs_to_compare: List[str] = []):

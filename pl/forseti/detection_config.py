@@ -1,5 +1,4 @@
 import dataclasses
-import multiprocessing
 
 @dataclasses.dataclass
 class DetectionConfig:

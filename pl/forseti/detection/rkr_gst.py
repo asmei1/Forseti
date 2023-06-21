@@ -28,7 +28,7 @@ def rkr_gst(pattern: TilesManager, source: TilesManager, minimal_search_length:i
             mark_tokens(pattern, source, maximal_matches)
 
 
-            for maximal_match_length in maximal_matches.maximal_matches:
+            for maximal_match_length in sorted(maximal_matches.maximal_matches, reverse=True):
                 if maximal_match_length < search_length:
                     continue
                 queue = maximal_matches.find(maximal_match_length)

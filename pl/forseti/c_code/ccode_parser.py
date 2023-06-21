@@ -18,7 +18,7 @@ class CCodeParser(CodeParser):
 
     def __parse_program_in_memory__(self, program: Program):
         translation_units = []
-        filenames_with_src_codes = list(zip(program.filenames, program.raw_codes))
+        filenames_with_src_codes = list(zip(program.filenames, ["".join(file_content) for file_content in program.raw_codes]))
         for filename in program.filenames:
             # Parse file.
             logging.debug('Processing %s ...', filename)

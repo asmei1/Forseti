@@ -11,6 +11,7 @@ from pl.forseti.c_code.ccode_parser import CCodeParser
 from pl.forseti.c_code.ccode_filter import CCodeFilter
 from pl.forseti.code_tokenizer import CodeTokenizer
 from pl.forseti.detection_engine import DetectionEngine
+from pl.forseti.comparison_results_processor import ComparisonResultsProcessor
 from pl.forseti.report_generation.report_generator import ReportGenerator
 
 
@@ -63,15 +64,15 @@ class CommandLineApp:
 
         detection_config = args_to_detection_config(self.__args)
         detection_start_time = time.process_time()
-        comparison_results = DetectionEngine().analyze(tokenized_programs, detection_config, self.__args.selected_programs_to_compare)
+        raw_comparison_results = DetectionEngine().analyze(tokenized_programs, detection_config, self.__args.selected_programs_to_compare)
         detection_end_time = time.process_time()
 
         report_generation_config = args_to_report_generation_config(self.__args)
-        report_generator = ReportGenerator(comparison_results, report_generation_config, self.__args.output_path)
+        comparison_results_processor_config = args_to_comparison_results_processor_config(self.__args)
+        comparison_results_processor = ComparisonResultsProcessor(raw_comparison_results, comparison_results_processor_config)
+        report_generator = ReportGenerator(comparison_results_processor, report_generation_config)
         report_generator.generate_reports()
         
-        # with 
-
         print("Tokenization time ", tokenization_end_time - tokenization_start_time)
         print("Detection time ", detection_end_time - detection_start_time)
         
