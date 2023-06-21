@@ -90,12 +90,12 @@ class DetectionEngine:
             np_a = np.fromiter(histogram_a.values(), dtype=int)
             np_b = np.fromiter(histogram_a.values(), dtype=int)
 
-            if ks_2samp(np_a, np_b).pvalue > 0.5:
+            if ks_2samp(np_a, np_b).pvalue > 0.8:
                 filtered_pairs.append(p)
 
 
         
-        logging.info("(%,%) pairs are left after filtering using ks test", len(pairs), len(filtered_pairs))
+        logging.info(f"({len(pairs)}, {len(filtered_pairs)}) pairs are left after filtering using ks test")
 
         return filtered_pairs
 
