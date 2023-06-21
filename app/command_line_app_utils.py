@@ -61,12 +61,13 @@ def configure_arg_parser(parser):
     algorithm_options.add_argument('--initial_search_length', type=int, default=20, required=False)
     algorithm_options.add_argument('--compare_function_names_in_function_calls', type=str2bool, nargs='?', const=True,default=True, required=False)
     algorithm_options.add_argument('--distinguish_operators_symbols', type=str2bool, nargs='?', const=True,default=True, required=False)
-    algorithm_options.add_argument('--unroll_ast', type=str2bool, nargs='?', const=True,default=True, required=False)
-    algorithm_options.add_argument('--remove_unrolled_function', type=str2bool, nargs='?', const=True,default=True, required=False)
+    algorithm_options.add_argument('--unroll_ast', type=str2bool, nargs='?', const=True,default=False, required=False)
+    algorithm_options.add_argument('--remove_unrolled_function', type=str2bool, nargs='?', const=True,default=False, required=False)
     algorithm_options.add_argument('--unroll_only_simple_functions', type=str2bool, nargs='?', const=True,default=True, required=False)
     algorithm_options.add_argument('--compare_whole_program', type=str2bool, nargs='?', const=True,default=False, required=False)
     algorithm_options.add_argument('--assign_functions_based_on_types', type=str2bool, nargs='?', const=True,default=True, required=False)
     algorithm_options.add_argument('--max_number_of_differences_in_single_comparison_pair', type=int, default=-1, required=False)
+    algorithm_options.add_argument('--ks_condition_value', type=float, default=0.95, required=False)
     algorithm_options.add_argument('--selected_programs_to_compare', nargs='+', required=False, default=[])
 
 def args_to_ccode_filtration_config(args):
