@@ -88,9 +88,9 @@ class DetectionEngine:
                     histogram_b[t.token_kind.short_name] = 0
                 histogram_b[t.token_kind.short_name] += 1
             np_a = np.fromiter(histogram_a.values(), dtype=int)
-            np_b = np.fromiter(histogram_a.values(), dtype=int)
+            np_b = np.fromiter(histogram_b.values(), dtype=int)
 
-            if ks_2samp(np_a, np_b).pvalue > 0.8:
+            if ks_2samp(np_a, np_b).pvalue > 0.5:
                 filtered_pairs.append(p)
 
 
