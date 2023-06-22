@@ -13,4 +13,5 @@ class DetectionConfig:
     compare_function_names_in_function_calls: bool = True  
     distinguish_operators_symbols: bool = True  
     n_processors: int = 1
+    ks_condition_value: float = 0.95
 

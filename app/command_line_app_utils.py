@@ -94,6 +94,7 @@ def args_to_detection_config(args):
     config.compare_whole_program = args.compare_whole_program
     config.max_number_of_differences_in_single_comparison_pair = args.max_number_of_differences_in_single_comparison_pair
     config.assign_functions_based_on_types = args.assign_functions_based_on_types
+    config.ks_condition_value = args.ks_condition_value
     return config
 
 def args_to_comparison_results_processor_config(args):

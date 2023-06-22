@@ -66,7 +66,7 @@ class CCodeParser(CodeParser):
                 tokenized_program.author = str(basename)
             else:
                 filename = os.path.splitext(os.path.basename(program.filenames[0]))[0]
-                tokenized_program.author = str(filename)
+                tokenized_program.author = str(basename) + str(filename)
 
         else:
             tokenized_program.author = program.author

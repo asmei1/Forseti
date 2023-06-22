@@ -65,35 +65,38 @@ class DetectionEngine:
             logging.info("flattening program...")
             tokenized_program = FlattenCodeUnits.flatten(tokenized_program)
 
-        logging.info("generating comparison pairs...")
+        logging.info("generating comparison pairs...") 
+        tokenized_programs = sorted(tokenized_programs, key=lambda p: p.author)
         comparison_pairs_generator = ComparisonPairsGenerator(config.compare_whole_program, config.max_number_of_differences_in_single_comparison_pair, config.assign_functions_based_on_types)
         pairs = comparison_pairs_generator.generate(tokenized_programs, selected_programs_to_compare)
+
         filtered_pairs: List[ComparisonPair] = []
-        
-        for p in pairs:
-            a:List[Token] = p.tokens_a
-            b:List[Token] = p.tokens_b
 
-            histogram_a: Dict[TokenKind, int] = dict.fromkeys(TokenKind.cursors_unique_list_of_short_names, 0)
-            histogram_b: Dict[TokenKind, int] = dict.fromkeys(TokenKind.cursors_unique_list_of_short_names, 0)
+        if config.ks_condition_value == -1:
+            for p in pairs:
+                a:List[Token] = p.tokens_a
+                b:List[Token] = p.tokens_b
 
-            for t in a:
-                if t.token_kind.short_name not in histogram_a:
-                    histogram_a[t.token_kind.short_name] = 0
-                histogram_a[t.token_kind.short_name] += 1
-            
+                histogram_a: Dict[TokenKind, int] = dict.fromkeys(TokenKind.cursors_unique_list_of_short_names, 0)
+                histogram_b: Dict[TokenKind, int] = dict.fromkeys(TokenKind.cursors_unique_list_of_short_names, 0)
 
-            for t in b:
-                if t.token_kind.short_name not in histogram_b:
-                    histogram_b[t.token_kind.short_name] = 0
-                histogram_b[t.token_kind.short_name] += 1
-            np_a = np.fromiter(histogram_a.values(), dtype=int)
-            np_b = np.fromiter(histogram_b.values(), dtype=int)
+                for t in a:
+                    if t.token_kind.short_name not in histogram_a:
+                        histogram_a[t.token_kind.short_name] = 0
+                    histogram_a[t.token_kind.short_name] += 1
+                
 
-            if ks_2samp(np_a, np_b).pvalue > 0.5:
-                filtered_pairs.append(p)
+                for t in b:
+                    if t.token_kind.short_name not in histogram_b:
+                        histogram_b[t.token_kind.short_name] = 0
+                    histogram_b[t.token_kind.short_name] += 1
+                np_a = np.fromiter(histogram_a.values(), dtype=int)
+                np_b = np.fromiter(histogram_b.values(), dtype=int)
 
-
+                if ks_2samp(np_a, np_b).pvalue > config.ks_condition_value:
+                    filtered_pairs.append(p)
+        else:
+            filtered_pairs = pairs
         
         logging.info(f"({len(pairs)}, {len(filtered_pairs)}) pairs are left after filtering using ks test")
 
