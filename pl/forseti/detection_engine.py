@@ -9,7 +9,6 @@ from .comparison_pairs_generator import ComparisonPairsGenerator
 from .comparison_result import ComparisonResult
 from .detection.rkr_gst import rkr_gst
 from .detection.tiles_manager import TilesManager
-from .detection.greedy_string_tiling import scored_string_tilling
 from .detection_config import DetectionConfig
 from .flatten_code_units import FlattenCodeUnits
 from .token import Token, TokenKind
