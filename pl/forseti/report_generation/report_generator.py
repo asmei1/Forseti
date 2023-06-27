@@ -65,6 +65,12 @@ class ReportGenerator:
             self.__json_output_path = None
             self.__html_output_path = None
 
+    @staticmethod
+    def dump_reports(data):
+        results, author_a, author_b, html_report_path = data 
+        with open(html_report_path, 'w', encoding='latin-1') as outfile:
+            outfile.write(generate_html_diff_page(results, author_a, author_b))
+            
 
     def generate_reports(self):
         if self.__report_generation_config.generate_heatmap_for_code_units:
@@ -79,14 +85,18 @@ class ReportGenerator:
             similarity_report_data = []
             overlap1_report_data = []
             overlap2_report_data = []
+            data_for_write = []
             for authors, results in self.__comparison_results_processor.get_flat_filtered_processed_results().items():
                 html_report_path = os.path.join(self.__html_output_path, slugify(authors[0] + " " + authors[1]) + ".html")
                 similarity_report_data.append((authors, html_report_path, results["similarity"])) 
                 overlap1_report_data.append((authors, html_report_path, results["overlap_1"])) 
                 overlap2_report_data.append((authors, html_report_path, results["overlap_2"])) 
                 
+                data_for_write.append((results, self.__comparison_results_processor.get_tokenized_program(authors[0]), self.__comparison_results_processor.get_tokenized_program(authors[1]), self.__html_output_path))
+
                 with open(html_report_path, 'w', encoding='latin-1') as outfile:
                     outfile.write(generate_html_diff_page(results, self.__comparison_results_processor.get_tokenized_program(authors[0]), self.__comparison_results_processor.get_tokenized_program(authors[1])))
+            # execute_function_in_multiprocesses(ReportGenerator.dump_reports, data_for_write, self.__report_generation_config.n_processors)
             
             with open(os.path.join(self.__html_output_path, "similarity.html"), 'w', encoding='latin-1') as outfile:
                 outfile.write(generate_summary_page("Similarity", similarity_report_data))

@@ -42,8 +42,6 @@ class DetectionEngine:
         config, comparison_pair = config_and_comparison_pair
         distinguish_operators_symbols, compare_function_names_in_function_calls, minimal_search_length, initial_search_length = config
         tokens_a, tokens_b = (comparison_pair.tokens_a, comparison_pair.tokens_b)
-        # a = " ".join([t.token_kind.short_name for t in tokens_a])
-        # b = " ".join([t.token_kind.short_name for t in tokens_b])
         tiles_a = TilesManager(tokens_a)
         tiles_b = TilesManager(tokens_b)
 
@@ -54,21 +52,11 @@ class DetectionEngine:
         # matches, marks_a, marks_b = scored_string_tilling(tokens_a, tokens_b, minimal_search_length, compare_function=token_comparison_function)
         # return ComparisonResult(comparison_pair, matches, marks_a, marks_b)
         logging.debug(f"done {time.process_time() - start_time} ...")
+        if len(matches) == 0:
+            a = 0
         return ComparisonResult(comparison_pair, matches, tiles_a.marks, tiles_b.marks)
     
-    def __generate_comparison_pairs__(self, tokenized_programs: List[TokenizedProgram], config: DetectionConfig, selected_programs_to_compare: List[str]) -> List[ComparisonPair]:
-        for tokenized_program in tokenized_programs:
-            if config.unroll_ast:
-                logging.info("unrolling program...")
-                tokenized_program = UnrollCodeUnits.unroll(tokenized_program, config.remove_unrolled_function, config.unroll_only_simple_functions)
-            logging.info("flattening program...")
-            tokenized_program = FlattenCodeUnits.flatten(tokenized_program)
-
-        logging.info("generating comparison pairs...") 
-        tokenized_programs = sorted(tokenized_programs, key=lambda p: p.author)
-        comparison_pairs_generator = ComparisonPairsGenerator(config.compare_whole_program, config.max_number_of_differences_in_single_comparison_pair, config.assign_functions_based_on_types)
-        pairs = comparison_pairs_generator.generate(tokenized_programs, selected_programs_to_compare)
-
+    def apply_ks_condition(self, pairs, config: DetectionConfig):
         filtered_pairs: List[ComparisonPair] = []
 
         if config.ks_condition_value == -1:
@@ -94,12 +82,26 @@ class DetectionEngine:
 
                 if ks_2samp(np_a, np_b).pvalue > config.ks_condition_value:
                     filtered_pairs.append(p)
+            logging.info(f"({len(pairs)}, {len(filtered_pairs)}) pairs are left after filtering using ks test")
         else:
             filtered_pairs = pairs
-        
-        logging.info(f"({len(pairs)}, {len(filtered_pairs)}) pairs are left after filtering using ks test")
 
         return filtered_pairs
+
+    def __generate_comparison_pairs__(self, tokenized_programs: List[TokenizedProgram], config: DetectionConfig, selected_programs_to_compare: List[str]) -> List[ComparisonPair]:
+        for tokenized_program in tokenized_programs:
+            if config.unroll_ast:
+                logging.info("unrolling program...")
+                tokenized_program = UnrollCodeUnits.unroll(tokenized_program, config.remove_unrolled_function, config.unroll_only_simple_functions)
+            logging.info("flattening program...")
+            tokenized_program = FlattenCodeUnits.flatten(tokenized_program)
+
+        logging.info("generating comparison pairs...") 
+        tokenized_programs = sorted(tokenized_programs, key=lambda p: p.author)
+        comparison_pairs_generator = ComparisonPairsGenerator(config.compare_whole_program, config.max_number_of_differences_in_single_comparison_pair, config.assign_functions_based_on_types)
+        pairs = comparison_pairs_generator.generate(tokenized_programs, selected_programs_to_compare)
+
+        return self.apply_ks_condition(pairs, config)
 
 
     def analyze(self, tokenized_programs: List[TokenizedProgram], config: DetectionConfig = DetectionConfig(), selected_programs_to_compare: List[str] = []):

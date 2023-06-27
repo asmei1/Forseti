@@ -44,7 +44,7 @@ class ComparisonResultsProcessor:
 
                 if key_a_to_b in filtered or key_b_to_a in filtered:
                     continue
-                if self.__similarity_threshold < results_b["similarity"]:
+                if self.__similarity_threshold <= results_b["similarity"]:
                     filtered[key_a_to_b] = results_b
 
         return filtered
@@ -186,8 +186,12 @@ class ComparisonResultsProcessor:
                 compared_program["overlap_2"] = overlap_2 / np.sum([len(ast.ast) for ast in programs[compared_program_name].code_units]) if self.__config.assign_functions_based_on_types else number_of_comparisons
                 similarities.append(compared_program["similarity"])
 
-        sd = np.std(np.array(similarities), axis=0)
-        similarity_threshold = min((min(similarities) + self.__config.minimal_similarity_threshold + sd * 2), self.__config.maximal_similarity_threshold)
+        if len(similarities):
+            sd = np.std(np.array(similarities), axis=0)
+            similarity_threshold = min((min(similarities) + self.__config.minimal_similarity_threshold + sd * 2), self.__config.maximal_similarity_threshold)
+        else:
+            similarity_threshold = 0.0
+
         logging.info(f"Minimal similarity threshold: {self.__config.minimal_similarity_threshold}" )
         logging.info(f"Similarity threshold: {similarity_threshold}" )
         return (similarity_threshold, program_to_program, programs)

@@ -17,13 +17,20 @@ def check_matches(matches,  n1: int, n2: int) -> bool:
 
 def rkr_gst(pattern: TilesManager, source: TilesManager, minimal_search_length:int, initial_search_length:int, subsequence_generator_function = "".join, token_comparision_function = eq):
     search_length = initial_search_length
+    current_max_search_length = initial_search_length
     all_matches = []
+    iter = 0
     while True:
+        if iter > 1000:
+            print("Cos nie pyklo tutaj", pattern.tokens[0].location, source.tokens[0].location)
+            break
+        iter += 1
         maximal_matches = LinkedList()
         longest_maximal_match = scanpattern(pattern, source, search_length, maximal_matches, subsequence_generator_function, token_comparision_function)
 
-        if longest_maximal_match > 2 * search_length:
+        if longest_maximal_match > 2 * current_max_search_length:
             search_length = longest_maximal_match
+            current_max_search_length = longest_maximal_match
         else:
             mark_tokens(pattern, source, maximal_matches)
 
@@ -54,4 +61,4 @@ def rkr_gst(pattern: TilesManager, source: TilesManager, minimal_search_length:i
                 break
     if all_matches:
         all_matches = sorted(all_matches, key=lambda x: x['length'], reverse=True)
-    return all_matches if all_matches else None
+    return all_matches

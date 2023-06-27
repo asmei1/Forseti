@@ -19,9 +19,16 @@ class CodeTokenizer:
 
     def parse_programs(self, programs_sets: List[Program]) -> List[TokenizedProgram]:
         if self.__n_processors == 1:
-            return [self.code_parser.parse(program) for program in programs_sets]
+            programs = [self.code_parser.parse(program) for program in programs_sets]
         else:
             parsers = [copy.deepcopy(self.code_parser) for _ in range(len(programs_sets))]
-            return execute_function_in_multiprocesses(CodeTokenizer.multiprocessing_parsing, zip(parsers, programs_sets), self.__n_processors)
+            programs = execute_function_in_multiprocesses(CodeTokenizer.multiprocessing_parsing, zip(parsers, programs_sets), self.__n_processors)
+        
+        filtered_programs = []
+        for p in programs:
+            if len(p.code_units) > 0:
+                filtered_programs.append(p)
+
+        return filtered_programs
 
         

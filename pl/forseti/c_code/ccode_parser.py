@@ -1,5 +1,6 @@
 import logging
 import os
+import codecs
 
 from typing import List
 from clang.cindex import Index
@@ -10,15 +11,21 @@ from .clang_ast_converter import ClangASTConverter
 from .ccode_filter import CCodeFilter
 
 
-
 class CCodeParser(CodeParser):
     def __init__(self, ccodeFilter:CCodeFilter) -> None:
         super().__init__()
         self.clang_ast_converter = ClangASTConverter(ccodeFilter)
-
+    
+    def remove_BOM_from_code(self, file_content):
+        BOMLEN = len(codecs.BOM_UTF8)
+        a = file_content[0][:BOMLEN]
+        if file_content[0][:BOMLEN] == codecs.BOM_UTF8 or file_content[0][:BOMLEN] == "ï»¿":
+            file_content[0] = file_content[0][BOMLEN:]
+        return file_content
+    
     def __parse_program_in_memory__(self, program: Program):
         translation_units = []
-        filenames_with_src_codes = list(zip(program.filenames, ["".join(file_content) for file_content in program.raw_codes]))
+        filenames_with_src_codes = list(zip(program.filenames, ["".join(self.remove_BOM_from_code(file_content)) for file_content in program.raw_codes]))
         for filename in program.filenames:
             # Parse file.
             logging.debug('Processing %s ...', filename)
