@@ -2,11 +2,10 @@ from dataclasses import asdict, dataclass
 
 from clang.cindex import CursorKind as ClangCursorKind
 from clang.cindex import Cursor as ClangCursor
-from ..token import TokenKind
+
 
 @dataclass
 class CCodeFilterConfig:
-
     filter_struct_declaration: bool = True
     """Defines, if structure declaration should be filtered."""
 
@@ -33,31 +32,40 @@ class CCodeFilterConfig:
 def is_initialization_list(cursor: ClangCursor) -> bool:
     return cursor.kind is ClangCursorKind.INIT_LIST_EXPR
 
+
 def is_struct_declaration(cursor: ClangCursor) -> bool:
     return cursor.kind is ClangCursorKind.STRUCT_DECL
+
 
 def is_function_declaration(cursor: ClangCursor) -> bool:
     if cursor.kind is ClangCursorKind.FUNCTION_DECL:
         return not cursor.is_definition()
     return False
 
+
 def is_alias(cursor: ClangCursor) -> bool:
     return cursor.kind is ClangCursorKind.TYPEDEF_DECL
+
 
 def is_mixed_declarations(cursor: ClangCursor) -> bool:
     return cursor.kind is ClangCursorKind.DECL_STMT
 
+
 def is_brackets(cursor: ClangCursor) -> bool:
     return cursor.kind is ClangCursorKind.COMPOUND_STMT
+
 
 def is_parent_expression(cursor: ClangCursor) -> bool:
     return cursor.kind is ClangCursorKind.PAREN_EXPR
 
+
 def is_unexposed_expression(cursor: ClangCursor) -> bool:
     return cursor.kind is ClangCursorKind.UNEXPOSED_EXPR
 
+
 def is_type_reference(cursor: ClangCursor) -> bool:
     return cursor.kind is ClangCursorKind.TYPE_REF
+
 
 class CCodeFilter:
     """"""
@@ -66,25 +74,17 @@ class CCodeFilter:
         # self.__config = config
         self.__rules = []
 
-        fixed_filter_rules = [
-            is_unexposed_expression, 
-            is_type_reference,
-            is_initialization_list
-        ]
+        fixed_filter_rules = [is_unexposed_expression, is_type_reference, is_initialization_list]
 
         self.__rules += fixed_filter_rules
 
         associated_rules = {}
-        associated_rules['filter_aliasses'] = is_alias
-        associated_rules[
-            'filter_mixed_declarations'] = is_mixed_declarations
-        associated_rules[
-            'filter_function_declaration'] = is_function_declaration
-        associated_rules[
-            'filter_struct_declaration'] = is_struct_declaration
-        associated_rules['filter_brackets'] = is_brackets
-        associated_rules[
-            'filter_parent_expression'] = is_parent_expression
+        associated_rules["filter_aliasses"] = is_alias
+        associated_rules["filter_mixed_declarations"] = is_mixed_declarations
+        associated_rules["filter_function_declaration"] = is_function_declaration
+        associated_rules["filter_struct_declaration"] = is_struct_declaration
+        associated_rules["filter_brackets"] = is_brackets
+        associated_rules["filter_parent_expression"] = is_parent_expression
 
         config_fields = asdict(config)
         for field_name, rule in associated_rules.items():
@@ -92,7 +92,7 @@ class CCodeFilter:
                 self.__rules.append(rule)
 
     def validate(self, cursor: ClangCursorKind) -> bool:
-        """Decide, if particall clang cursor should be part of CodeUnit, 
+        """Decide, if particall clang cursor should be part of CodeUnit,
         based on config passed in CProgramFilter constructor."""
         # if not cursor or cursor.kind is TokenKind.Invalid:
         if not cursor:

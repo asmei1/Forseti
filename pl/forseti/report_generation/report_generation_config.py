@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+
 @dataclass
 class ReportGenerationConfig:
     generate_heatmap_for_whole_programs: bool = False

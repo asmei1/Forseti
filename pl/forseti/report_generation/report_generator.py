@@ -23,6 +23,7 @@ def key_to_json(data):
         return str(data)
     raise TypeError
 
+
 def to_json(data):
     if data is None or isinstance(data, (bool, float, int, tuple, range, str, list)):
         return data
@@ -32,25 +33,28 @@ def to_json(data):
         return {key_to_json(key): to_json(data[key]) for key in data}
     raise TypeError
 
+
 class ReportGenerator:
     def __create_folders__(self):
-        if (self.__report_generation_config.generate_heatmap_for_code_units \
-            or self.__report_generation_config.generate_heatmap_for_whole_programs) \
-                and not os.path.exists(self.__heatmaps_output_path):
-            logging.debug("Creating folder: % ...", self.__heatmaps_output_path,)
+        if (
+            self.__report_generation_config.generate_heatmap_for_code_units or self.__report_generation_config.generate_heatmap_for_whole_programs
+        ) and not os.path.exists(self.__heatmaps_output_path):
+            logging.debug(
+                "Creating folder: % ...",
+                self.__heatmaps_output_path,
+            )
             os.makedirs(self.__heatmaps_output_path)
 
-        if (self.__report_generation_config.generate_jsons or self.__report_generation_config.generate_code_unit_metrics) \
-            and not os.path.exists(self.__json_output_path):
-            
+        if (self.__report_generation_config.generate_jsons or self.__report_generation_config.generate_code_unit_metrics) and not os.path.exists(
+            self.__json_output_path
+        ):
             os.makedirs(self.__json_output_path)
             logging.debug("Creating folder: % ...", self.__json_output_path)
 
         if self.__report_generation_config.generate_html_diffs and not os.path.exists(self.__html_output_path):
-            os.makedirs(self.__html_output_path) 
+            os.makedirs(self.__html_output_path)
             logging.debug("Creating folder: % ...", self.__html_output_path)
 
-        
     def __init__(self, comparison_results_processor: ComparisonResultsProcessor, report_generation_config: ReportGenerationConfig) -> None:
         self.__comparison_results_processor = comparison_results_processor
         self.__report_generation_config = report_generation_config
@@ -67,10 +71,9 @@ class ReportGenerator:
 
     @staticmethod
     def dump_reports(data):
-        results, author_a, author_b, html_report_path = data 
-        with open(html_report_path, 'w', encoding='latin-1') as outfile:
+        results, author_a, author_b, html_report_path = data
+        with open(html_report_path, "w", encoding="latin-1") as outfile:
             outfile.write(generate_html_diff_page(results, author_a, author_b))
-            
 
     def generate_reports(self):
         if self.__report_generation_config.generate_heatmap_for_code_units:
@@ -88,23 +91,36 @@ class ReportGenerator:
             data_for_write = []
             for authors, results in self.__comparison_results_processor.get_flat_filtered_processed_results().items():
                 html_report_path = os.path.join(self.__html_output_path, slugify(authors[0] + " " + authors[1]) + ".html")
-                similarity_report_data.append((authors, html_report_path, results["similarity"])) 
-                overlap1_report_data.append((authors, html_report_path, results["overlap_1"])) 
-                overlap2_report_data.append((authors, html_report_path, results["overlap_2"])) 
-                
-                data_for_write.append((results, self.__comparison_results_processor.get_tokenized_program(authors[0]), self.__comparison_results_processor.get_tokenized_program(authors[1]), self.__html_output_path))
+                similarity_report_data.append((authors, html_report_path, results["similarity"]))
+                overlap1_report_data.append((authors, html_report_path, results["overlap_1"]))
+                overlap2_report_data.append((authors, html_report_path, results["overlap_2"]))
 
-                with open(html_report_path, 'w', encoding='latin-1') as outfile:
-                    outfile.write(generate_html_diff_page(results, self.__comparison_results_processor.get_tokenized_program(authors[0]), self.__comparison_results_processor.get_tokenized_program(authors[1])))
+                data_for_write.append(
+                    (
+                        results,
+                        self.__comparison_results_processor.get_tokenized_program(authors[0]),
+                        self.__comparison_results_processor.get_tokenized_program(authors[1]),
+                        self.__html_output_path,
+                    )
+                )
+
+                with open(html_report_path, "w", encoding="latin-1") as outfile:
+                    outfile.write(
+                        generate_html_diff_page(
+                            results,
+                            self.__comparison_results_processor.get_tokenized_program(authors[0]),
+                            self.__comparison_results_processor.get_tokenized_program(authors[1]),
+                        )
+                    )
             # execute_function_in_multiprocesses(ReportGenerator.dump_reports, data_for_write, self.__report_generation_config.n_processors)
-            
-            with open(os.path.join(self.__html_output_path, "similarity.html"), 'w', encoding='latin-1') as outfile:
+
+            with open(os.path.join(self.__html_output_path, "similarity.html"), "w", encoding="latin-1") as outfile:
                 outfile.write(generate_summary_page("Similarity", similarity_report_data))
 
-            with open(os.path.join(self.__html_output_path, "overlap_1.html"), 'w', encoding='latin-1') as outfile:
+            with open(os.path.join(self.__html_output_path, "overlap_1.html"), "w", encoding="latin-1") as outfile:
                 outfile.write(generate_summary_page("Overlap 1", overlap1_report_data))
 
-            with open(os.path.join(self.__html_output_path, "overlap_2.html"), 'w', encoding='latin-1') as outfile:
+            with open(os.path.join(self.__html_output_path, "overlap_2.html"), "w", encoding="latin-1") as outfile:
                 outfile.write(generate_summary_page("Overlap 2", overlap2_report_data))
 
         if self.__report_generation_config.generate_jsons:
@@ -113,8 +129,7 @@ class ReportGenerator:
         if self.__report_generation_config.generate_code_unit_metrics:
             self.dump_code_unit_metrics()
 
-
-    @staticmethod 
+    @staticmethod
     def dump_comparison_result_in_json(data_pack):
         config, (name, data) = data_pack
         if type(name) is tuple:
@@ -122,18 +137,22 @@ class ReportGenerator:
 
         filename = slugify(name) + ".json"
 
-        with open(os.path.join(config, filename), 'w', encoding='latin-1') as outfile:
+        with open(os.path.join(config, filename), "w", encoding="latin-1") as outfile:
             json.dump(to_json(data), outfile, indent=4)
 
     def dump_comparison_results_in_json(self):
         filtered_results = self.__comparison_results_processor.get_flat_filtered_processed_results()
-        config = (self.__json_output_path)
+        config = self.__json_output_path
 
         if self.__report_generation_config.n_processors == 1:
             for name, data_dict in filtered_results.items():
                 ReportGenerator.dump_comparison_result_in_json((config, (name, data_dict)))
         else:
-            execute_function_in_multiprocesses(ReportGenerator.dump_comparison_result_in_json, zip([config]*len(filtered_results), filtered_results), self.__report_generation_config.n_processors)
+            execute_function_in_multiprocesses(
+                ReportGenerator.dump_comparison_result_in_json,
+                zip([config] * len(filtered_results), filtered_results.items()),
+                self.__report_generation_config.n_processors,
+            )
 
         summary, overlap_1, overlap_2 = self.__comparison_results_processor.get_summary()
         ReportGenerator.dump_comparison_result_in_json((config, ("summary", summary)))
@@ -141,8 +160,6 @@ class ReportGenerator:
         ReportGenerator.dump_comparison_result_in_json((config, ("overlap_2", overlap_2)))
 
     def dump_code_unit_metrics(self):
-        config = (self.__json_output_path)
+        config = self.__json_output_path
         code_unit_metrics = self.__comparison_results_processor.get_code_units_metrics()
         ReportGenerator.dump_comparison_result_in_json((config, ("code_unit_metrics", code_unit_metrics)))
-    
- 

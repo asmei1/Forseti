@@ -1,4 +1,3 @@
-
 import copy
 from typing import List
 from .program import Program
@@ -8,7 +7,7 @@ from .utils.multiprocessing import execute_function_in_multiprocesses
 
 
 class CodeTokenizer:
-    def __init__(self, code_parser: CodeParser, n_processors:int = -1) -> None:
+    def __init__(self, code_parser: CodeParser, n_processors: int = -1) -> None:
         self.code_parser = code_parser
         self.__n_processors = n_processors
 
@@ -23,12 +22,10 @@ class CodeTokenizer:
         else:
             parsers = [copy.deepcopy(self.code_parser) for _ in range(len(programs_sets))]
             programs = execute_function_in_multiprocesses(CodeTokenizer.multiprocessing_parsing, zip(parsers, programs_sets), self.__n_processors)
-        
+
         filtered_programs = []
         for p in programs:
             if len(p.code_units) > 0:
                 filtered_programs.append(p)
 
         return filtered_programs
-
-        

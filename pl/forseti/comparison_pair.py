@@ -3,6 +3,7 @@ from typing import List
 from .tokenized_program import TokenizedProgram
 from .token import Token
 
+
 @dataclass
 class ComparisonPair:
     program_a: TokenizedProgram

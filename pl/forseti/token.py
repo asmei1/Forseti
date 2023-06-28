@@ -1,11 +1,13 @@
 from typing import List, Tuple
 from dataclasses import dataclass, field, asdict
 
+
 class TokenKind:
     """Represents cursor kind."""
+
     cursor_type_counter: int = 0
     cursors_unique_list_of_short_names: List[str] = []
-    token_kind_list: List['TokenKind'] = [] 
+    token_kind_list: List["TokenKind"] = []
 
     def __init__(self, name: str, unique_short_name: str) -> None:
         self._name = name
@@ -33,7 +35,7 @@ class TokenKind:
         return self._id
 
     def __repr__(self) -> str:
-        return f'[{self.name} {self.short_name}]'
+        return f"[{self.name} {self.short_name}]"
 
     def __check_if_short_name_exists__(self, short_name) -> bool:
         if short_name in TokenKind.cursors_unique_list_of_short_names:
@@ -43,6 +45,7 @@ class TokenKind:
         if isinstance(__o, TokenKind):
             return self.id == __o.id
         return False
+
 
 class VariableTokenKind(TokenKind):
     """Represents variable type kind."""
@@ -57,7 +60,7 @@ class VariableTokenKind(TokenKind):
 
 
 TokenKind.Invalid = TokenKind("Invalid type", "INV")
-#variables
+# variables
 VariableTokenKind.NoType = VariableTokenKind("No type", "NOT")
 VariableTokenKind.Void = VariableTokenKind("Void type", "VOI")
 VariableTokenKind.Pointer = VariableTokenKind("Pointer type", "PTR")
@@ -67,12 +70,12 @@ VariableTokenKind.Numeric = VariableTokenKind("Numeric type", "NUM")
 VariableTokenKind.FloatingPoint = VariableTokenKind("Floating point presicion type", "FLP")
 VariableTokenKind.Enum = VariableTokenKind("Enum type", "ENU")
 VariableTokenKind.Array = VariableTokenKind("Array type", "ARR")
-#literals
+# literals
 TokenKind.CharacterLiteral = TokenKind("Char literatal type", "CHL")
 TokenKind.NumericLiteral = TokenKind("Numeric literal type", "NUL")
 TokenKind.FloatingPointLiteral = TokenKind("Floating point literal type", "FLL")
 TokenKind.StringLiteral = TokenKind("String literal type", "STL")
-#structures and functions
+# structures and functions
 TokenKind.ClassDecl = TokenKind("Class decl", "CLS")
 TokenKind.MethodDecl = TokenKind("Method decl", "MET")
 TokenKind.FieldDecl = TokenKind("Field decl", "FIE")
@@ -114,11 +117,13 @@ TokenKind.TernaryOp = TokenKind("Ternary (conditional) operator", "TER")
 TokenKind.CastExpr = TokenKind("Cast type", "CST")
 TokenKind.Alias = TokenKind("Alias on type, typedef", "TPD")
 
+
 @dataclass
 class Location:
     path: str = ""
     line: int = -1
     column: int = -1
+
 
 @dataclass
 class Token:
@@ -127,8 +132,8 @@ class Token:
     token_kind: TokenKind = None
     variable_token_kind: VariableTokenKind = None
     location: Location = None
-    children: List['Token'] = field(default_factory=list)
-    parent_token: 'Token' = None
+    children: List["Token"] = field(default_factory=list)
+    parent_token: "Token" = None
 
     def location_as_dict(self):
         return asdict(self.location)
