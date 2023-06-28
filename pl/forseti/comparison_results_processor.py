@@ -124,9 +124,6 @@ class ComparisonResultsProcessor:
             a_to_b_data["similarity"] = 0.0
             a_to_b_data["overlap_1"] = 0.0
             a_to_b_data["overlap_2"] = 0.0
-            # a_to_b_data["similarity"] = (np.sum(matches_a) + np.sum(matches_b)) / (len(matches_a) + len(matches_b))
-            # a_to_b_data["overlap_1"] = np.sum(matches_a) / len(matches_a)
-            # a_to_b_data["overlap_2"] = np.sum(matches_b) / len(matches_b)
             a_to_b_data["temp_matches_1"] = np.sum(matches_a)
             a_to_b_data["temp_matches_2"] = np.sum(matches_b)
             a_to_b_data["matches"] = []
@@ -140,17 +137,16 @@ class ComparisonResultsProcessor:
                         }
                     )
                     a_to_b_data["similarity"] += 2 * raw_code_unit_entry["length"]
-            a_to_b_data["similarity"] /= len(matches_a) + len(matches_b)
-            a_to_b_data["overlap_1"] = a_to_b_data["similarity"] / len(matches_a)
-            a_to_b_data["overlap_2"] = a_to_b_data["similarity"] / len(matches_b)
+
+            a_to_b_data["overlap_1"] = np.sum(matches_a) / len(matches_a)
+            a_to_b_data["overlap_2"] = np.sum(matches_b) / len(matches_b)
 
             b_to_a_data = {}
             b_to_a_data["similarity"] = a_to_b_data["similarity"]
-            # b_to_a_data["overlap_1"] = np.sum(matches_b) / len(matches_b)
-            # b_to_a_data["overlap_2"] = np.sum(matches_a) / len(matches_a)
             b_to_a_data["temp_matches_1"] = np.sum(matches_b)
             b_to_a_data["temp_matches_2"] = np.sum(matches_a)
             b_to_a_data["matches"] = []
+
             if raw_comparison_result:
                 for raw_code_unit_entry in raw_comparison_result:
                     b_to_a_data["matches"].append(
@@ -161,8 +157,11 @@ class ComparisonResultsProcessor:
                         }
                     )
 
-            b_to_a_data["overlap_1"] = b_to_a_data["similarity"] / len(matches_a)
-            b_to_a_data["overlap_2"] = b_to_a_data["similarity"] / len(matches_b)
+            b_to_a_data["overlap_1"] = np.sum(matches_b) / len(matches_b)
+            b_to_a_data["overlap_2"] = np.sum(matches_a) / len(matches_a)
+
+            a_to_b_data["similarity"] = a_to_b_data["similarity"] / (len(matches_a) + len(matches_b))
+            b_to_a_data["similarity"] = b_to_a_data["similarity"] / (len(matches_a) + len(matches_b))
 
             a_to_b_key = (pair.tokens_a[0].name, pair.tokens_b[0].name)
             program_to_program[pair.program_a.author][pair.program_b.author]["code_unit_matches"][a_to_b_key] = a_to_b_data

@@ -54,8 +54,6 @@ class DetectionEngine:
         # matches, marks_a, marks_b = scored_string_tilling(tokens_a, tokens_b, minimal_search_length, compare_function=token_comparison_function)
         # return ComparisonResult(comparison_pair, matches, marks_a, marks_b)
         logging.debug(f"done {time.process_time() - start_time} ...")
-        if len(matches) == 0:
-            a = 0
         return ComparisonResult(comparison_pair, matches, tiles_a.marks, tiles_b.marks)
 
     def apply_ks_condition(self, pairs, config: DetectionConfig):

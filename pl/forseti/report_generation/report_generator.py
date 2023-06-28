@@ -2,13 +2,7 @@ from typing import List
 import logging
 import os
 import json
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from ..token import Token
 from .report_generation_config import ReportGenerationConfig
-from ..comparison_result import ComparisonResult
 from ..utils.slugify import slugify
 from .html_diff_generator import generate_html_diff_page, generate_summary_page
 from .generate_heatmap import generate_heatmap
@@ -72,7 +66,7 @@ class ReportGenerator:
     @staticmethod
     def dump_reports(data):
         results, author_a, author_b, html_report_path = data
-        with open(html_report_path, "w", encoding="latin-1") as outfile:
+        with open(html_report_path, "w", encoding="utf8") as outfile:
             outfile.write(generate_html_diff_page(results, author_a, author_b))
 
     def generate_reports(self):
@@ -88,23 +82,23 @@ class ReportGenerator:
             similarity_report_data = []
             overlap1_report_data = []
             overlap2_report_data = []
-            data_for_write = []
+            # data_for_write = []
             for authors, results in self.__comparison_results_processor.get_flat_filtered_processed_results().items():
                 html_report_path = os.path.join(self.__html_output_path, slugify(authors[0] + " " + authors[1]) + ".html")
                 similarity_report_data.append((authors, html_report_path, results["similarity"]))
                 overlap1_report_data.append((authors, html_report_path, results["overlap_1"]))
                 overlap2_report_data.append((authors, html_report_path, results["overlap_2"]))
 
-                data_for_write.append(
-                    (
-                        results,
-                        self.__comparison_results_processor.get_tokenized_program(authors[0]),
-                        self.__comparison_results_processor.get_tokenized_program(authors[1]),
-                        self.__html_output_path,
-                    )
-                )
+                # data_for_write.append(
+                #     (
+                #         results,
+                #         self.__comparison_results_processor.get_tokenized_program(authors[0]),
+                #         self.__comparison_results_processor.get_tokenized_program(authors[1]),
+                #         self.__html_output_path,
+                #     )
+                # )
 
-                with open(html_report_path, "w", encoding="latin-1") as outfile:
+                with open(html_report_path, "w", encoding="utf8") as outfile:
                     outfile.write(
                         generate_html_diff_page(
                             results,
@@ -114,13 +108,13 @@ class ReportGenerator:
                     )
             # execute_function_in_multiprocesses(ReportGenerator.dump_reports, data_for_write, self.__report_generation_config.n_processors)
 
-            with open(os.path.join(self.__html_output_path, "similarity.html"), "w", encoding="latin-1") as outfile:
+            with open(os.path.join(self.__html_output_path, "similarity.html"), "w", encoding="utf8") as outfile:
                 outfile.write(generate_summary_page("Similarity", similarity_report_data))
 
-            with open(os.path.join(self.__html_output_path, "overlap_1.html"), "w", encoding="latin-1") as outfile:
+            with open(os.path.join(self.__html_output_path, "overlap_1.html"), "w", encoding="utf8") as outfile:
                 outfile.write(generate_summary_page("Overlap 1", overlap1_report_data))
 
-            with open(os.path.join(self.__html_output_path, "overlap_2.html"), "w", encoding="latin-1") as outfile:
+            with open(os.path.join(self.__html_output_path, "overlap_2.html"), "w", encoding="utf8") as outfile:
                 outfile.write(generate_summary_page("Overlap 2", overlap2_report_data))
 
         if self.__report_generation_config.generate_jsons:
@@ -137,7 +131,7 @@ class ReportGenerator:
 
         filename = slugify(name) + ".json"
 
-        with open(os.path.join(config, filename), "w", encoding="latin-1") as outfile:
+        with open(os.path.join(config, filename), "w", encoding="utf8") as outfile:
             json.dump(to_json(data), outfile, indent=4)
 
     def dump_comparison_results_in_json(self):
