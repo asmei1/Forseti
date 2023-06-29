@@ -18,7 +18,6 @@ class CCodeParser(CodeParser):
 
     def remove_BOM_from_code(self, file_content):
         BOMLEN = len(codecs.BOM_UTF8)
-        a = file_content[0][:BOMLEN]
         if file_content[0][:BOMLEN] == codecs.BOM_UTF8 or file_content[0][:BOMLEN] == "ï»¿":
             file_content[0] = file_content[0][BOMLEN:]
         return file_content

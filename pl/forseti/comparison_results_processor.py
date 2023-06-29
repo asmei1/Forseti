@@ -1,7 +1,10 @@
+from typing import Dict
 import logging
 import dataclasses
 import copy
 import numpy as np
+
+from .tokenized_program import TokenizedProgram
 
 
 @dataclasses.dataclass
@@ -92,7 +95,7 @@ class ComparisonResultsProcessor:
         return metrics
 
     def __proces_comparison_results__(self, raw_comparison_results):
-        programs = {}
+        programs: Dict[str, TokenizedProgram] = {}
         program_to_program = {}
         for elem in raw_comparison_results:
             pair = elem.pair
@@ -105,6 +108,9 @@ class ComparisonResultsProcessor:
                 programs[pair.program_b.author] = pair.program_b
 
             stats_prototype = {}
+            stats_prototype["overall_similarity"] = 0.0
+            stats_prototype["overall_overlap_1"] = 0.0
+            stats_prototype["overall_overlap_2"] = 0.0
             stats_prototype["similarity"] = 0.0
             stats_prototype["overlap_1"] = 0.0
             stats_prototype["overlap_2"] = 0.0
@@ -124,9 +130,11 @@ class ComparisonResultsProcessor:
             a_to_b_data["similarity"] = 0.0
             a_to_b_data["overlap_1"] = 0.0
             a_to_b_data["overlap_2"] = 0.0
-            a_to_b_data["temp_matches_1"] = np.sum(matches_a)
-            a_to_b_data["temp_matches_2"] = np.sum(matches_b)
+
+            a_to_b_data["temp_matches_1"] = a_to_b_data["overlap_1"] = np.sum(matches_a)
+            a_to_b_data["temp_matches_2"] = a_to_b_data["overlap_2"] = np.sum(matches_b)
             a_to_b_data["matches"] = []
+            a_to_b_data["matched_tokens"] = 0
             if raw_comparison_result:
                 for raw_code_unit_entry in raw_comparison_result:
                     a_to_b_data["matches"].append(
@@ -136,16 +144,13 @@ class ComparisonResultsProcessor:
                             "length": raw_code_unit_entry["length"],
                         }
                     )
-                    a_to_b_data["similarity"] += 2 * raw_code_unit_entry["length"]
-
-            a_to_b_data["overlap_1"] = np.sum(matches_a) / len(matches_a)
-            a_to_b_data["overlap_2"] = np.sum(matches_b) / len(matches_b)
+                    a_to_b_data["matched_tokens"] += raw_code_unit_entry["length"]
 
             b_to_a_data = {}
-            b_to_a_data["similarity"] = a_to_b_data["similarity"]
-            b_to_a_data["temp_matches_1"] = np.sum(matches_b)
-            b_to_a_data["temp_matches_2"] = np.sum(matches_a)
+            b_to_a_data["temp_matches_1"] = b_to_a_data["overlap_1"] = a_to_b_data["overlap_2"]
+            b_to_a_data["temp_matches_2"] = b_to_a_data["overlap_2"] = a_to_b_data["overlap_1"]
             b_to_a_data["matches"] = []
+            b_to_a_data["matched_tokens"] = 0
 
             if raw_comparison_result:
                 for raw_code_unit_entry in raw_comparison_result:
@@ -157,11 +162,14 @@ class ComparisonResultsProcessor:
                         }
                     )
 
-            b_to_a_data["overlap_1"] = np.sum(matches_b) / len(matches_b)
-            b_to_a_data["overlap_2"] = np.sum(matches_a) / len(matches_a)
+            b_to_a_data["matched_tokens"] = a_to_b_data["matched_tokens"]
+            a_to_b_data["overlap_2"] /= len(matches_a)
+            b_to_a_data["overlap_1"] = a_to_b_data["overlap_2"]
+            a_to_b_data["overlap_1"] /= len(matches_b)
+            b_to_a_data["overlap_2"] = a_to_b_data["overlap_1"]
 
-            a_to_b_data["similarity"] = a_to_b_data["similarity"] / (len(matches_a) + len(matches_b))
-            b_to_a_data["similarity"] = b_to_a_data["similarity"] / (len(matches_a) + len(matches_b))
+            a_to_b_data["similarity"] = (a_to_b_data["matched_tokens"] * 2) / (len(matches_a) + len(matches_b))
+            b_to_a_data["similarity"] = a_to_b_data["similarity"]
 
             a_to_b_key = (pair.tokens_a[0].name, pair.tokens_b[0].name)
             program_to_program[pair.program_a.author][pair.program_b.author]["code_unit_matches"][a_to_b_key] = a_to_b_data
@@ -171,30 +179,22 @@ class ComparisonResultsProcessor:
         similarities = []
         for compared_to_name, compared_to in program_to_program.items():
             for compared_program_name, compared_program in compared_to.items():
-                similarity = 0.0
                 overlap_1 = 0.0
                 overlap_2 = 0.0
-                number_of_comparisons = 0
+                matched_tokens = 0
 
                 for _, matches in compared_program["code_unit_matches"].items():
-                    similarity += matches["similarity"]
                     overlap_1 += matches["temp_matches_1"]
                     overlap_2 += matches["temp_matches_2"]
+                    matched_tokens += matches["matched_tokens"]
                     del matches["temp_matches_1"]
                     del matches["temp_matches_2"]
-                    number_of_comparisons += similarity > 0.0 or self.__config.assign_functions_based_on_types
 
-                compared_program["similarity"] = similarity / number_of_comparisons if number_of_comparisons != 0 else 0.0
-                compared_program["overlap_1"] = (
-                    overlap_1 / np.sum([len(ast.ast) for ast in programs[compared_to_name].code_units])
-                    if self.__config.assign_functions_based_on_types
-                    else number_of_comparisons
-                )
-                compared_program["overlap_2"] = (
-                    overlap_2 / np.sum([len(ast.ast) for ast in programs[compared_program_name].code_units])
-                    if self.__config.assign_functions_based_on_types
-                    else number_of_comparisons
-                )
+                number_of_all_tokens_of_program_1 = sum([len(c.ast) for c in programs[compared_to_name].code_units])
+                number_of_all_tokens_of_program_2 = sum([len(c.ast) for c in programs[compared_program_name].code_units])
+                compared_program["overlap_1"] = (overlap_1 / number_of_all_tokens_of_program_1, matched_tokens, number_of_all_tokens_of_program_1)
+                compared_program["overlap_2"] = (overlap_2 / number_of_all_tokens_of_program_2, matched_tokens, number_of_all_tokens_of_program_2)
+                compared_program["similarity"] = (overlap_1 + overlap_2) / (number_of_all_tokens_of_program_1 + number_of_all_tokens_of_program_2)
                 similarities.append(compared_program["similarity"])
 
         if len(similarities):

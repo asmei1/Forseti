@@ -20,18 +20,22 @@ def __to_html_snippet(format_data, path, code):
                 if line_index not in added:
                     added[line_index] = []
 
+                l = list(snippet[line_index])
+
                 if line_index == start_line and line_index != end_line:
                     for addings in added[line_index]:
                         if addings[0] <= start_col:
                             offset += addings[1]
                     offset += start_col
                     added[line_index].append((start_col, len(start_token)))
+                    l.insert(offset, start_token)
                 elif line_index == end_line:
                     if line_index == start_line:
                         for addings in added[line_index]:
                             if addings[0] <= start_col:
                                 offset += addings[1]
                         offset += start_col
+                        l.insert(offset, start_token)
                     else:
                         start_col = 0
 
@@ -41,19 +45,18 @@ def __to_html_snippet(format_data, path, code):
                     end_offset += end_col + 1
                     added[line_index].append((start_col, len(start_token)))
                     added[line_index].append((end_col, len(end_token)))
-                else:
-                    # for addings in added[line_index]:
-                    #     offset += addings[1]
-                    added[line_index].append((0, len(start_token)))
+                    l.insert(end_offset if end_offset else len(l), end_token)
+                # else:
+                # for addings in added[line_index]:
+                #     offset += addings[1]
+                # added[line_index].append((0, len(start_token)))
 
-                l = list(snippet[line_index])
-                l.insert(offset, start_token)
-                l.insert(end_offset if end_offset else len(l), end_token)
                 snippet[line_index] = "".join(l)
 
     remove_forbidden_tags = lambda x: x.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     snippet = list(map(remove_forbidden_tags, snippet))
-    snippet = "".join([f"<code>{line}</code>" for line in snippet])
+    # snippet = "".join([f"<code>{line}</code>" for line in snippet])
+    snippet = "<code>" + "".join(snippet) + "</code>"
     start_token_regex = r"##__##start_(\d+_\d+)##__##"
     end_token_regex = r"##__##end##__##"
     snippet = re.sub(start_token_regex, '<span class="s_\\1 modified">', snippet)
@@ -102,23 +105,28 @@ def __get_html_head__():
                 .row {
                     display: flex;
                 }
-
-                pre {
+                pre code,
+                pre .line-number {
+                    color: black;
+                    display: block;
                 }
 
-                pre code {
-                display: block;
-                    counter-increment: line;
+                pre .line-number {
+                    float: left;
+                    margin: 0 1em 0 -1em;
+                    border-right: 1px solid;
+                    text-align: right;
                 }
-                pre code:before {
-                    
-                    content: counter(line);
-                    display: inline-block;
-                    border-right: 1px solid #ddd;
-                    padding: 0 .5em;
-                    margin-right: .5em;
-                    color: #888
 
+                pre .line-number span {
+                    display: block;
+                    padding: 0 .5em 0 1em;
+                }
+
+
+                pre .cl {
+                    display: block;
+                    clear: both;
                 }
             </style>
         </head>"""
@@ -174,8 +182,8 @@ def __get_html_body__(data, program_1: TokenizedProgram, program_2: TokenizedPro
     <div class="row">
         <div class="left" id="similarity_list">
             <p>Overall similarity: {data['similarity']:.3f}</p>
-            <p>Left program overlap: {data['overlap_1']:.3f}</p>
-            <p>Right program overlap: {data['overlap_2']:.3f}</p>
+            <p>Left program overlap:  {data['overlap_1'][0]:.3f} ({data['overlap_1'][1]}/{data['overlap_1'][2]})</p>
+            <p>Right program overlap: {data['overlap_2'][0]:.3f} ({data['overlap_2'][1]}/{data['overlap_2'][2]})</p>
             <ol>
                 ###similarity_list###
             </ol>
@@ -252,7 +260,7 @@ def __get_script_part__():
                 if (item != "highlighted" && item != "modified" ){
                     
                     panel2.querySelector("span." + item).scrollIntoView({ behavior: 'auto', block: 'center', inline: 'center' });
-                    panel2.scrollLeft = 0 
+                    panel2.scrollLeft = 0;
                 
                 }
             });
@@ -286,7 +294,6 @@ def __get_script_part__():
 
       panel_list.querySelectorAll('span').forEach((list_item) => {
         list_item.addEventListener('mouseenter', () => {
-            // Get the id of the item
             const itemClass = list_item.getAttribute('class');
             // Highlight the corresponding items in the other panels
             panel_list.querySelectorAll("span." + itemClass).forEach((item) => {
@@ -318,43 +325,60 @@ def __get_script_part__():
       });
     }
     function addListenersPanels(panel_list, panel1, panel2) {
-      // Add event listeners to each list item
-      panel1.querySelectorAll('span').forEach((item) => {
-        item.addEventListener('mouseenter', () => {
-            // Get the id of the item
-            const itemClass = item.getAttribute('class').slice(0, -9);
-            // Highlight the corresponding items in the other panels
-            panel_list.querySelectorAll("span." + itemClass).forEach((item) => {
-                item.classList.add('highlighted');
-            });
-            panel1.querySelectorAll("span." + itemClass).forEach((item) => {
-                item.classList.add('highlighted');
-            });
-            panel2.querySelectorAll("span." + itemClass).forEach((item) => {
-                item.classList.add('highlighted');
-            });
-        });
 
-        item.addEventListener('mouseleave', () => {
-            panel_list.querySelectorAll("span").forEach((item) => {
-                item.classList.remove('highlighted');
+        // Add event listeners to each list item
+        panel1.querySelectorAll('span').forEach((item) => {
+            const itemClass = item.getAttribute('class');
+            if (itemClass == "line-number" || itemClass == null || itemClass == "cl")
+                return;
+            item.addEventListener('mouseenter', () => {
+                // Get the id of the item
+                const itemClass = item.getAttribute('class').slice(0, -9);
+                // Highlight the corresponding items in the other panels
+                panel_list.querySelectorAll("span." + itemClass).forEach((item) => {
+                    item.classList.add('highlighted');
+                });
+                panel1.querySelectorAll("span." + itemClass).forEach((item) => {
+                    item.classList.add('highlighted');
+                });
+                panel2.querySelectorAll("span." + itemClass).forEach((item) => {
+                    item.classList.add('highlighted');
+                });
             });
-            panel1.querySelectorAll('span').forEach((item) => {
-                item.classList.remove('highlighted');
+
+            item.addEventListener('mouseleave', () => {
+                panel_list.querySelectorAll("span").forEach((item) => {
+                    item.classList.remove('highlighted');
+                });
+                panel1.querySelectorAll('span').forEach((item) => {
+                    item.classList.remove('highlighted');
+                });
+            
+                panel2.querySelectorAll('span').forEach((item) => {
+                    item.classList.remove('highlighted');
+                });
             });
-        
-            panel2.querySelectorAll('span').forEach((item) => {
-                item.classList.remove('highlighted');
-            });
+            addScrollOnClick(item, panel2);
         });
-        addScrollOnClick(item, panel2);
-      });
     }
     
     const list = document.getElementById('similarity_list');
     const left_panel = document.getElementById('files_1');
     const right_panel = document.getElementById('files_2');
     
+
+    (function () {
+        var pre = document.getElementsByTagName('pre'),
+            pl = pre.length;
+        for (var i = 0; i < pl; i++) {
+            pre[i].innerHTML = '<span class="line-number"></span>' + pre[i].innerHTML + '<span class="cl"></span>';
+            var num = pre[i].innerHTML.split(/\\n/).length;
+            for (var j = 0; j < num; j++) {
+                var line_num = pre[i].getElementsByTagName('span')[0];
+                line_num.innerHTML += '<span>' + (j + 1) + '</span>';
+            }
+        }
+    })();
     addListeners(list, left_panel, right_panel);
     addListenersPanels(list, left_panel, right_panel);
     addListenersPanels(list, right_panel, left_panel);
