@@ -1,0 +1,276 @@
+{# templates/report.html #}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Detection report</title>
+    <style>
+        .diff {
+            font-family: Courier;
+        }
+
+        .diff_header {
+            background-color: #f8f8f8
+        }
+
+        .empty_line {
+            background-color: #cfc
+        }
+
+        .row {
+            display: flex;
+
+            flex-wrap: wrap;
+            padding: 10px;
+        }
+
+        .file_name {
+            font-size: 0.8em;
+        }
+
+        .row>* {
+            width: 100%;
+        }
+
+        .row>.left {
+            width: 20%;
+            padding: 1rem;
+            padding-left: 0px;
+            padding-top: 0px;
+        }
+
+        .row>.middle,
+        .row>.right {
+            width: 34%;
+            padding-top: 0px;
+            padding: 1rem;
+        }
+
+        .row>.right,
+        .row>.middle,
+        .row>.left {
+            overflow-y: auto;
+            max-height: 90vh;
+        }
+
+        .modified {
+            background-color: #fdd
+        }
+
+        .highlighted {
+            background-color: #faa
+        }
+
+        .row {
+            display: flex;
+        }
+
+        pre code,
+        pre .line-number {
+            color: black;
+            display: block;
+        }
+
+        pre .line-number {
+            float: left;
+            margin: 0 1em 0 -1em;
+            border-right: 1px solid;
+            text-align: right;
+        }
+
+        pre .line-number span {
+            display: block;
+            padding: 0 .5em 0 1em;
+        }
+
+        pre .cl {
+            display: block;
+            clear: both;
+        }
+
+        div .left>ol>li>span {
+            cursor: pointer;
+        }
+
+        div .left>ol>li>div {
+            width: 500px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="row">
+        <div class="left" id="similarity_list">
+            <p>Overall similarity: {{ overall_similarity|round(3) }}</p>
+            <p>Left program overlap: {{ overlap_1|round(3) }} ({{ matched_tokens }}/{{ tokens_number_1 }})</p>
+            <p>Right program overlap: {{ overlap_2|round(3) }} ({{ matched_tokens }}/{{ tokens_number_2 }})</p>
+            <ol>
+                {% for match in matches_list %}
+
+                <li class="{{ match.class }}">
+                    <div style="font-family: Monospace;" class="{{ match.class }}">
+                        {{ match.code_unit_name_1 }}<br>
+                        {{ match.code_unit_name_2 }}<br>
+                    </div>
+                    Fragment similarity: {{ match.similarity|round(3) }}<br>
+                    {% for fragment in match.fragments %}
+                    <span class="{{ fragment.class }}">
+                        Localization: {{ fragment.start_line_1 }}:{{ fragment.start_line_1 }}
+                        | {{ fragment.length }}</span><br>
+                    {% endfor %}
+                </li>
+                {% endfor %}
+            </ol>
+        </div>
+        <div class="middle diff" id="files_1">
+            {% for f in files_1 %}
+            <div class="file_name">{{ f.path }}</div>
+            <div class="raw_code">
+                <pre><code>{{ f.code }}</code></pre>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="right diff" id="files_2">
+            {% for f in files_2 %}
+            <div class="file_name">{{ f.path }}</div>
+            <div class="raw_code">
+                <pre><code>{{ f.code }}</code></pre>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+<script>
+
+    function addScrollOnClick(item, panel2) {
+        item.addEventListener('click', () => {
+            item.classList.forEach((item) => {
+                if (item != "highlighted" && item != "modified") {
+
+                    panel2.querySelector("span." + item).scrollIntoView({ behavior: 'auto', block: 'center', inline: 'center' });
+                    panel2.scrollLeft = 0;
+
+                }
+            });
+        });
+    }
+
+    function addListeners(panel_list, left_panel, right_panel) {
+        panel_list.querySelectorAll('div').forEach((list_item) => {
+            list_item.addEventListener('mouseenter', () => {
+                const itemClass = list_item.getAttribute('class');
+                right_panel.querySelectorAll('[class^="' + itemClass + '_"]').forEach((item) => {
+                    item.classList.add('highlighted');
+                });
+                left_panel.querySelectorAll('[class^="' + itemClass + '_"]').forEach((item) => {
+                    item.classList.add('highlighted');
+                });
+                list_item.classList.add('highlighted');
+            });
+            list_item.addEventListener('mouseleave', () => {
+                list_item.classList.remove('highlighted');
+                const itemClass = list_item.getAttribute('class');
+                right_panel.querySelectorAll('[class^="' + itemClass + '_"]').forEach((item) => {
+                    item.classList.remove('highlighted');
+                });
+                left_panel.querySelectorAll('[class^="' + itemClass + '_"]').forEach((item) => {
+                    item.classList.remove('highlighted');
+                });
+            });
+        });
+
+
+        panel_list.querySelectorAll('span').forEach((list_item) => {
+            list_item.addEventListener('mouseenter', () => {
+                const itemClass = list_item.getAttribute('class');
+                // Highlight the corresponding items in the other panels
+                panel_list.querySelectorAll("span." + itemClass).forEach((item) => {
+                    item.classList.add('highlighted');
+                });
+                right_panel.querySelectorAll("span." + itemClass).forEach((item) => {
+                    item.classList.add('highlighted');
+                });
+                left_panel.querySelectorAll("span." + itemClass).forEach((item) => {
+                    item.classList.add('highlighted');
+                });
+            });
+
+            list_item.addEventListener('mouseleave', () => {
+                panel_list.querySelectorAll("span").forEach((item) => {
+                    item.classList.remove('highlighted');
+                });
+                left_panel.querySelectorAll('span').forEach((item) => {
+                    item.classList.remove('highlighted');
+                });
+
+                right_panel.querySelectorAll('span').forEach((item) => {
+                    item.classList.remove('highlighted');
+                });
+            });
+
+            addScrollOnClick(list_item, right_panel);
+            addScrollOnClick(list_item, left_panel);
+        });
+    }
+    function addListenersPanels(panel_list, panel1, panel2) {
+
+        panel1.querySelectorAll('span').forEach((item) => {
+            const itemClass = item.getAttribute('class');
+            if (itemClass == "line-number" || itemClass == null || itemClass == "cl")
+                return;
+
+            item.addEventListener('mouseenter', () => {
+                const itemClass = item.getAttribute('class').slice(0, -9);
+                // Highlight the corresponding items in the other panels
+                panel_list.querySelectorAll("span." + itemClass).forEach((item) => {
+                    item.classList.add('highlighted');
+                });
+                panel1.querySelectorAll("span." + itemClass).forEach((item) => {
+                    item.classList.add('highlighted');
+                });
+                panel2.querySelectorAll("span." + itemClass).forEach((item) => {
+                    item.classList.add('highlighted');
+                });
+            });
+
+            item.addEventListener('mouseleave', () => {
+                panel_list.querySelectorAll("span").forEach((item) => {
+                    item.classList.remove('highlighted');
+                });
+                panel1.querySelectorAll('span').forEach((item) => {
+                    item.classList.remove('highlighted');
+                });
+
+                panel2.querySelectorAll('span').forEach((item) => {
+                    item.classList.remove('highlighted');
+                });
+            });
+            addScrollOnClick(item, panel2);
+        });
+    }
+
+    const list = document.getElementById('similarity_list');
+    const left_panel = document.getElementById('files_1');
+    const right_panel = document.getElementById('files_2');
+
+
+    (function () {
+        var pre = document.getElementsByTagName('pre'),
+            pl = pre.length;
+        for (var i = 0; i < pl; i++) {
+            pre[i].innerHTML = '<span class="line-number"></span>' + pre[i].innerHTML + '<span class="cl"></span>';
+            var num = pre[i].innerHTML.split(/\n/).length;
+            for (var j = 0; j < num; j++) {
+                var line_num = pre[i].getElementsByTagName('span')[0];
+                line_num.innerHTML += '<span>' + (j + 1) + '</span>';
+            }
+        }
+    })();
+    addListeners(list, left_panel, right_panel);
+    addListenersPanels(list, left_panel, right_panel);
+    addListenersPanels(list, right_panel, left_panel);
+</script>
+
+</html>

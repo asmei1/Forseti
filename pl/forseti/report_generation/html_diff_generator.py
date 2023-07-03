@@ -1,9 +1,11 @@
+import os
 import re
 import copy
 from ..tokenized_program import TokenizedProgram
+from jinja2 import Environment, FileSystemLoader
 
 
-def __to_html_snippet(format_data, path, code):
+def __to_html_snippet__(format_data, path, code):
     snippet = copy.deepcopy(code)
 
     added = {}
@@ -46,90 +48,17 @@ def __to_html_snippet(format_data, path, code):
                     added[line_index].append((start_col, len(start_token)))
                     added[line_index].append((end_col, len(end_token)))
                     l.insert(end_offset if end_offset else len(l), end_token)
-                # else:
-                # for addings in added[line_index]:
-                #     offset += addings[1]
-                # added[line_index].append((0, len(start_token)))
 
                 snippet[line_index] = "".join(l)
 
     remove_forbidden_tags = lambda x: x.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     snippet = list(map(remove_forbidden_tags, snippet))
-    # snippet = "".join([f"<code>{line}</code>" for line in snippet])
-    snippet = "<code>" + "".join(snippet) + "</code>"
+    snippet = "".join(snippet)
     start_token_regex = r"##__##start_(\d+_\d+)##__##"
     end_token_regex = r"##__##end##__##"
     snippet = re.sub(start_token_regex, '<span class="s_\\1 modified">', snippet)
     snippet = re.sub(end_token_regex, "</span>", snippet)
     return snippet
-
-
-def __get_html_head__():
-    return """        
-    <head>
-            <style>
-                .diff { font-family: Courier; }
-                .diff_header { background-color: #f8f8f8 }
-                .empty_line { background-color: #cfc }
-                .row {
-                    display: flex;
-
-                    flex-wrap: wrap;
-                    padding: 10px;
-                }
-                .file_name{
-                    font-size: 0.8em;
-                }
-                .row>* {
-                    width: 100%;
-                }
-
-                .row>.left{
-                    width: 20%;
-                    padding: 1rem;
-                    padding-left: 0px;
-                    padding-top: 0px;
-                }
-
-                .row>.middle, .row>.right{
-                    width: 34%;
-                    padding-top: 0px;
-                    padding: 1rem;
-                }
-                .row>.right, .row>.middle, .row>.left{
-                    overflow-y: scroll;
-                    max-height: 90vh;
-                }
-                .modified { background-color: #fdd }
-                .highlighted { background-color: #faa }
-                .row {
-                    display: flex;
-                }
-                pre code,
-                pre .line-number {
-                    color: black;
-                    display: block;
-                }
-
-                pre .line-number {
-                    float: left;
-                    margin: 0 1em 0 -1em;
-                    border-right: 1px solid;
-                    text-align: right;
-                }
-
-                pre .line-number span {
-                    display: block;
-                    padding: 0 .5em 0 1em;
-                }
-
-
-                pre .cl {
-                    display: block;
-                    clear: both;
-                }
-            </style>
-        </head>"""
 
 
 def __get_preformat_info(comparison_results, prefix, code_units):
@@ -176,281 +105,75 @@ def __get_preformat_info(comparison_results, prefix, code_units):
     return data
 
 
-def __get_html_body__(data, program_1: TokenizedProgram, program_2: TokenizedProgram):
-    html = ""
-    html += f"""
-    <div class="row">
-        <div class="left" id="similarity_list">
-            <p>Overall similarity: {data['similarity']:.3f}</p>
-            <p>Left program overlap:  {data['overlap_1'][0]:.3f} ({data['overlap_1'][1]}/{data['overlap_1'][2]})</p>
-            <p>Right program overlap: {data['overlap_2'][0]:.3f} ({data['overlap_2'][1]}/{data['overlap_2'][2]})</p>
-            <ol>
-                ###similarity_list###
-            </ol>
-        </div>
-        <div class="middle diff" id="files_1">###1_files_1###</div>
-        <div class="right diff" id="files_2">###2_files_2###</div>
-    </div>
-    """
-    similarity_list_html = ""
+def __get_matches_list__(data, program_1, program_2):
+    matches_list = []
     for comparison_index, (code_unit_names, match_data) in enumerate(data["code_unit_matches"].items()):
-        name_token_1 = code_unit_names[0]
-        name_token_2 = code_unit_names[1]
-        similarity = match_data["similarity"]
+        single_match = {}
 
-        similarity_list_html += f"""
-        <li class="s_{comparison_index}">
-            <div style="font-family: Monospace;" class="s_{comparison_index}">
-                {name_token_1}<br>
-                {name_token_2}<br>
-            </div>
-        Fragment similarity: {similarity:.3f}<br>"""
+        single_match["code_unit_name_1"] = code_unit_names[0]
+        single_match["code_unit_name_2"] = code_unit_names[1]
+        single_match["similarity"] = match_data["similarity"]
+        single_match["class"] = f"s_{comparison_index}"
+
+        fragments = []
         for index, localization in enumerate(match_data["matches"]):
-            program_1_start_line = (
+            fragment = {}
+            fragment["start_line_1"] = (
                 next(filter(lambda x: x.ast[0].name == code_unit_names[0], program_1.code_units)).ast[localization["position_1"]].location.line
             )
-            program_2_start_line = (
+            fragment["start_line_2"] = (
                 next(filter(lambda x: x.ast[0].name == code_unit_names[1], program_2.code_units)).ast[localization["position_2"]].location.line
             )
-            label = f"{program_1_start_line:>3}:{program_2_start_line:>3} | {localization['length']:>3}"
-            similarity_list_html += f"""
-                <span class="s_{comparison_index}_{index}">Localization: {label}</span><br>
-            """
+            fragment["length"] = localization["length"]
+            fragment["class"] = f"s_{comparison_index}_{index}"
 
-        similarity_list_html += "</li>"
-    html = html.replace("###similarity_list###", similarity_list_html)
+            fragments.append(fragment)
+        single_match["fragments"] = fragments
+        matches_list.append(single_match)
 
-    files_page = ""
-    file_index = 0
+    return matches_list
+
+
+def __get_files_content__(data, program_1, program_2):
     format_data = __get_preformat_info(data, 1, program_1.code_units)
+    files_1 = []
     for path, code in zip(program_1.filenames, program_1.raw_codes):
-        path_label = f"""<div class="file_name">{path}</div>"""
+        snippet = __to_html_snippet__(format_data, path, code)
+        files_1.append({"path": path, "code": snippet})
 
-        snippet = __to_html_snippet(format_data, path, code)
-
-        content = f"""<div class="raw_code"><pre>{snippet}</pre></div>"""
-        files_page += path_label + content
-        file_index += 1
-
-    html = html.replace("###1_files_1###", files_page)
-
-    files_page = ""
-    file_index = 0
     format_data = __get_preformat_info(data, 2, program_2.code_units)
+    files_2 = []
     for path, code in zip(program_2.filenames, program_2.raw_codes):
-        path_label = f"""<div class="file_name">{path}</div>"""
+        snippet = __to_html_snippet__(format_data, path, code)
+        files_2.append({"path": path, "code": snippet})
 
-        snippet = __to_html_snippet(format_data, path, code)
-
-        content = f"""<div class="raw_code"><pre>{snippet}</pre></div>"""
-        files_page += path_label + content
-        file_index += 1
-
-    html = html.replace("###2_files_2###", files_page)
-
-    return html
-
-
-def __get_script_part__():
-    return """
-    
-    function addScrollOnClick(item, panel2){
-        item.addEventListener('click', ()=> {
-            item.classList.forEach((item) => {
-                if (item != "highlighted" && item != "modified" ){
-                    
-                    panel2.querySelector("span." + item).scrollIntoView({ behavior: 'auto', block: 'center', inline: 'center' });
-                    panel2.scrollLeft = 0;
-                
-                }
-            });
-        });
-    }
-    function addListeners(panel_list, left_panel, right_panel) {
-      // Add event listeners to each list item
-      panel_list.querySelectorAll('div').forEach((list_item) => {
-        list_item.addEventListener('mouseenter', () => {
-            const itemClass = list_item.getAttribute('class');
-            right_panel.querySelectorAll('[class^="'+itemClass +'_"]').forEach((item) => {
-                item.classList.add('highlighted');
-            });
-            left_panel.querySelectorAll('[class^="'+itemClass +'_"]').forEach((item) => {
-                item.classList.add('highlighted');
-            });
-            list_item.classList.add('highlighted');
-        });
-        list_item.addEventListener('mouseleave', () => {
-            list_item.classList.remove('highlighted');
-            const itemClass = list_item.getAttribute('class');
-            right_panel.querySelectorAll('[class^="'+itemClass +'_"]').forEach((item) => {
-                item.classList.remove('highlighted');
-            });
-            left_panel.querySelectorAll('[class^="'+itemClass +'_"]').forEach((item) => {
-                item.classList.remove('highlighted');
-            });
-        });
-      }); 
-
-
-      panel_list.querySelectorAll('span').forEach((list_item) => {
-        list_item.addEventListener('mouseenter', () => {
-            const itemClass = list_item.getAttribute('class');
-            // Highlight the corresponding items in the other panels
-            panel_list.querySelectorAll("span." + itemClass).forEach((item) => {
-                item.classList.add('highlighted');
-            });
-            right_panel.querySelectorAll("span." + itemClass).forEach((item) => {
-                item.classList.add('highlighted');
-            });
-            left_panel.querySelectorAll("span." + itemClass).forEach((item) => {
-                item.classList.add('highlighted');
-            });
-        });
-
-        list_item.addEventListener('mouseleave', () => {
-            panel_list.querySelectorAll("span").forEach((item) => {
-                item.classList.remove('highlighted');
-            });
-            left_panel.querySelectorAll('span').forEach((item) => {
-                item.classList.remove('highlighted');
-            });
-        
-            right_panel.querySelectorAll('span').forEach((item) => {
-                item.classList.remove('highlighted');
-            });
-        });
-        
-        addScrollOnClick(list_item, right_panel);
-        addScrollOnClick(list_item, left_panel);
-      });
-    }
-    function addListenersPanels(panel_list, panel1, panel2) {
-
-        // Add event listeners to each list item
-        panel1.querySelectorAll('span').forEach((item) => {
-            const itemClass = item.getAttribute('class');
-            if (itemClass == "line-number" || itemClass == null || itemClass == "cl")
-                return;
-            item.addEventListener('mouseenter', () => {
-                // Get the id of the item
-                const itemClass = item.getAttribute('class').slice(0, -9);
-                // Highlight the corresponding items in the other panels
-                panel_list.querySelectorAll("span." + itemClass).forEach((item) => {
-                    item.classList.add('highlighted');
-                });
-                panel1.querySelectorAll("span." + itemClass).forEach((item) => {
-                    item.classList.add('highlighted');
-                });
-                panel2.querySelectorAll("span." + itemClass).forEach((item) => {
-                    item.classList.add('highlighted');
-                });
-            });
-
-            item.addEventListener('mouseleave', () => {
-                panel_list.querySelectorAll("span").forEach((item) => {
-                    item.classList.remove('highlighted');
-                });
-                panel1.querySelectorAll('span').forEach((item) => {
-                    item.classList.remove('highlighted');
-                });
-            
-                panel2.querySelectorAll('span').forEach((item) => {
-                    item.classList.remove('highlighted');
-                });
-            });
-            addScrollOnClick(item, panel2);
-        });
-    }
-    
-    const list = document.getElementById('similarity_list');
-    const left_panel = document.getElementById('files_1');
-    const right_panel = document.getElementById('files_2');
-    
-
-    (function () {
-        var pre = document.getElementsByTagName('pre'),
-            pl = pre.length;
-        for (var i = 0; i < pl; i++) {
-            pre[i].innerHTML = '<span class="line-number"></span>' + pre[i].innerHTML + '<span class="cl"></span>';
-            var num = pre[i].innerHTML.split(/\\n/).length;
-            for (var j = 0; j < num; j++) {
-                var line_num = pre[i].getElementsByTagName('span')[0];
-                line_num.innerHTML += '<span>' + (j + 1) + '</span>';
-            }
-        }
-    })();
-    addListeners(list, left_panel, right_panel);
-    addListenersPanels(list, left_panel, right_panel);
-    addListenersPanels(list, right_panel, left_panel);
-    """
+    return files_1, files_2
 
 
 def generate_html_diff_page(data, program_1: TokenizedProgram, program_2: TokenizedProgram):
-    # data = (similarity, overlap_1, overlap_2, code_unit_matches)
-    html = ""
-    html += f"""<html>{__get_html_head__()}"""
-    html += f"""<body>{__get_html_body__(data, program_1, program_2)}</body>"""
-    html += f"""<script>{__get_script_part__()}</script>"""
-    html += """</html>"""
-
-    return html
+    environment = Environment(loader=FileSystemLoader(os.path.join(os.path.dirname(__file__), "templates/")))
+    template = environment.get_template("report.html")
+    files_1, files_2 = __get_files_content__(data, program_1, program_2)
+    context = {
+        "overall_similarity": data["similarity"],
+        "overlap_1": data["overlap_1"][0],
+        "overlap_2": data["overlap_2"][0],
+        "matched_tokens": data["overlap_1"][1],
+        "tokens_number_1": data["overlap_1"][2],
+        "tokens_number_2": data["overlap_2"][2],
+        "matches_list": __get_matches_list__(data, program_1, program_2),
+        "files_1": files_1,
+        "files_2": files_2,
+    }
+    return template.render(context)
 
 
 def generate_summary_page(title, data):
-    html = """
-<!DOCTYPE html>
-<html>
-  <head>
-"""
-    html += f"""
-    <title>{title}</title>
-"""
-    html += """
-  </head>
-  <body>
-    <style>
-        body {
-            font-family: Helvetica;
-        }
-        h1 {
-            font-size: 50px;
-            margin: 7% 0% 1% 0%;
-        }
-        h3 {
-            font-size: 25px;
-            margin: 0% 0% 7% 0%;
-        }
-        button {
-            width: 70%;
-            text-align: center;
-            border: none;
-            background-color: #E0E0E0;
-            transition-duration: 0.4s;
-        }
-        button:hover {
-            background-color: #F5F5F5;
-        }
-    </style>
-    <body>
-    <div style="justify-content: center; text-align: center;">
-"""
-    html += f"""
-      <h1>{title}</h1>
-      <h3>Report</h3>
-      <div id="menu-div">
-    """
     data = sorted(data, key=lambda x: x[2], reverse=True)
+    similarity_list = []
     for authors, html_diff_path, similarity in data:
-        path = html_diff_path.replace("\\", "/")
-        html += f"""
-        <button style="padding:10px; margin-bottom: 5px;" onclick="window.location.href=&quot;{path}&quot;">
-            <div style="display: inline-block;">{authors[0]}<br><br>{authors[1]}</div> 
-            <div style="display: inline-block; padding-left: 150px;">{similarity}<br>&nbsp;</div> 
-        </button>"""
-    html += """
-            </div>
-          </div>
-      </body>
-</html>"""
+        similarity_list.append({"name_1": authors[0], "name_2": authors[1], "path": html_diff_path, "value": similarity})
 
-    return html
+    environment = Environment(loader=FileSystemLoader(os.path.join(os.path.dirname(__file__), "templates/")))
+    template = environment.get_template("summary.html")
+    return template.render({"title": title, "report_name": title, "similarity_list": similarity_list})
