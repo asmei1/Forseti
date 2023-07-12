@@ -191,9 +191,15 @@
                 });
                 right_panel.querySelectorAll("span." + itemClass).forEach((item) => {
                     item.classList.add('highlighted');
+                    item.querySelectorAll('span').forEach((nested_item) => {
+                        nested_item.classList.add('highlighted');
+                    });
                 });
                 left_panel.querySelectorAll("span." + itemClass).forEach((item) => {
                     item.classList.add('highlighted');
+                    item.querySelectorAll('span').forEach((nested_item) => {
+                        nested_item.classList.add('highlighted');
+                    });
                 });
             });
 
@@ -203,10 +209,16 @@
                 });
                 left_panel.querySelectorAll('span').forEach((item) => {
                     item.classList.remove('highlighted');
+                    item.querySelectorAll('span').forEach((nested_item) => {
+                        nested_item.classList.remove('highlighted');
+                    });
                 });
 
                 right_panel.querySelectorAll('span').forEach((item) => {
                     item.classList.remove('highlighted');
+                    item.querySelectorAll('span').forEach((nested_item) => {
+                        nested_item.classList.remove('highlighted');
+                    });
                 });
             });
 
@@ -229,9 +241,15 @@
                 });
                 panel1.querySelectorAll("span." + itemClass).forEach((item) => {
                     item.classList.add('highlighted');
+                    item.querySelectorAll('span').forEach((nested_item) => {
+                        nested_item.classList.add('highlighted');
+                    });
                 });
                 panel2.querySelectorAll("span." + itemClass).forEach((item) => {
                     item.classList.add('highlighted');
+                    item.querySelectorAll('span').forEach((nested_item) => {
+                        nested_item.classList.add('highlighted');
+                    });
                 });
             });
 
@@ -241,10 +259,16 @@
                 });
                 panel1.querySelectorAll('span').forEach((item) => {
                     item.classList.remove('highlighted');
+                    item.querySelectorAll('span').forEach((nested_item) => {
+                        nested_item.classList.remove('highlighted');
+                    });
                 });
 
                 panel2.querySelectorAll('span').forEach((item) => {
                     item.classList.remove('highlighted');
+                    item.querySelectorAll('span').forEach((nested_item) => {
+                        nested_item.classList.remove('highlighted');
+                    });
                 });
             });
             addScrollOnClick(item, panel2);

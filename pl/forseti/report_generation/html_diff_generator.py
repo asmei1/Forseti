@@ -2,6 +2,7 @@ import os
 import re
 import copy
 from ..tokenized_program import TokenizedProgram
+from ..token import TokenKind
 from jinja2 import Environment, FileSystemLoader
 
 
@@ -46,7 +47,7 @@ def __to_html_snippet__(format_data, path, code):
                             end_offset += addings[1]
                     end_offset += end_col + 1
                     added[line_index].append((start_col, len(start_token)))
-                    added[line_index].append((end_col, len(end_token)))
+                    added[line_index].append((end_col - len(end_token), len(end_token)))
                     l.insert(end_offset if end_offset else len(l), end_token)
 
                 snippet[line_index] = "".join(l)
@@ -79,10 +80,13 @@ def __get_preformat_info(comparison_results, prefix, code_units):
                             n_token.name,
                         ]:
                             n_token = code_unit.ast[i - 1]
+                            c_token_column = c_token.location.column - 1
+                            if c_token.token_kind == TokenKind.VariableDecl:
+                                c_token_column -= 1 + len(c_token.type_name)
                             data[(comparison_index, index)].append(
                                 (
                                     c_token.location.line - 1,
-                                    c_token.location.column - 1,
+                                    c_token_column,
                                     n_token.location.line - 1,
                                     len(n_token.name) + n_token.location.column,
                                     c_token.location.path,
@@ -91,10 +95,13 @@ def __get_preformat_info(comparison_results, prefix, code_units):
                             c_token = code_unit.ast[i]
                         n_token = code_unit.ast[i + 1]
 
+                    c_token_column = c_token.location.column - 1
+                    if c_token.token_kind == TokenKind.VariableDecl:
+                        c_token_column -= 1 + len(c_token.type_name)
                     data[(comparison_index, index)].append(
                         (
                             c_token.location.line - 1,
-                            c_token.location.column - 1,
+                            c_token_column,
                             n_token.location.line - 1,
                             len(n_token.name) + n_token.location.column,
                             c_token.location.path,
@@ -118,6 +125,7 @@ def __get_matches_list__(data, program_1, program_2):
         fragments = []
         for index, localization in enumerate(match_data["matches"]):
             fragment = {}
+
             fragment["start_line_1"] = (
                 next(filter(lambda x: x.ast[0].name == code_unit_names[0], program_1.code_units)).ast[localization["position_1"]].location.line
             )
