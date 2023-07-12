@@ -2,8 +2,8 @@ from typing import List, Optional
 
 
 class TilesManager:
-    def __init__(self, tokens: List) -> None:
-        self.tokens = tokens
+    def __init__(self, tokens: List, token_to_str) -> None:
+        self.tokens = [token_to_str(token) for token in tokens]
         self.marks = [False] * len(self.tokens)
         self.size = len(self.tokens)
 

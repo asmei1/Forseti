@@ -27,19 +27,18 @@ class DetectionEngine:
         return "".join([token.token_kind.short_name for token in tokens])
 
     @staticmethod
-    def token_comparison_function(distinguish_operators_symbols: bool, compare_function_names_in_function_calls: bool, token_a: Token, token_b: Token):
-        if token_a.token_kind == token_b.token_kind:
-            if token_a.token_kind in [TokenKind.CharacterLiteral]:
-                return token_a.name == token_b.name
-            if compare_function_names_in_function_calls:
-                if token_a.token_kind == TokenKind.FunctionCall:
-                    return token_a.name == token_b.name
-            if distinguish_operators_symbols:
-                if token_a.token_kind in [TokenKind.BinaryOp, TokenKind.UnaryOp, TokenKind.CompoundAssigmentOp]:
-                    return token_a.name == token_b.name
-            return True
+    def token_to_str(distinguish_operators_symbols: bool, compare_function_names_in_function_calls: bool, token: Token):
+        token_str = token.token_kind.short_name
 
-        return False
+        if token.token_kind in [TokenKind.CharacterLiteral]:
+            token_str += token.name
+        elif compare_function_names_in_function_calls:
+            if token.token_kind == TokenKind.FunctionCall:
+                token_str += token.name
+        elif distinguish_operators_symbols:
+            if token.token_kind in [TokenKind.BinaryOp, TokenKind.UnaryOp, TokenKind.CompoundAssigmentOp]:
+                token_str += token.name
+        return token_str
 
     @staticmethod
     def compare_tokens(config_and_comparison_pair):
@@ -49,13 +48,11 @@ class DetectionEngine:
 
         logging.debug("analyzing comparison pair...")
         start_time = time.process_time()
-        token_comparison_function = lambda token_a, token_b: DetectionEngine.token_comparison_function(
-            distinguish_operators_symbols, compare_function_names_in_function_calls, token_a, token_b
-        )
+        token_to_str = lambda token: DetectionEngine.token_to_str(distinguish_operators_symbols, compare_function_names_in_function_calls, token)
 
-        tiles_a = TilesManager(tokens_a)
-        tiles_b = TilesManager(tokens_b)
-        matches = gst(tiles_a, tiles_b, minimal_search_length, initial_search_length, token_comparison_function)
+        tiles_a = TilesManager(tokens_a, token_to_str)
+        tiles_b = TilesManager(tokens_b, token_to_str)
+        matches = gst(tiles_a, tiles_b, minimal_search_length, initial_search_length)
 
         # matches, marks_a, marks_b = scored_string_tilling(tokens_a, tokens_b, minimal_search_length, compare_function=token_comparison_function)
         # return ComparisonResult(comparison_pair, matches, marks_a, marks_b)
@@ -98,9 +95,7 @@ class DetectionEngine:
     ) -> List[ComparisonPair]:
         for tokenized_program in tqdm.tqdm(tokenized_programs):
             if config.unroll_ast:
-                # logging.debug("unrolling program...")
                 tokenized_program = UnrollCodeUnits.unroll(tokenized_program, config.remove_unrolled_function, config.unroll_only_simple_functions)
-            # logging.debug("flattening program...")
             tokenized_program = FlattenCodeUnits.flatten(tokenized_program)
 
         logging.info("generating comparison pairs...")

@@ -1,9 +1,10 @@
 from collections import deque
 from .tiles_manager import TilesManager
 from rolling import PolynomialHash
+from ..token import TokenKind
 
 
-def scanpattern(pattern: TilesManager, text: TilesManager, search_length: int, max_matches, compare_token_fun):
+def scanpattern(pattern: TilesManager, text: TilesManager, search_length: int, max_matches):
     longest_match = 0
     text_begin_idx = text.get_index_of_next_unmarked_token(0)
 
@@ -17,8 +18,8 @@ def scanpattern(pattern: TilesManager, text: TilesManager, search_length: int, m
 
     text_hash_to_positions = {}
 
-    text_hasher = PolynomialHash([text.tokens[i].token_kind.short_name for i in range(text_begin_idx, text.size)], search_length)
-    pattern_hasher = PolynomialHash([pattern.tokens[i].token_kind.short_name for i in range(pattern_begin_idx, pattern.size)], search_length)
+    text_hasher = PolynomialHash([text.tokens[i] for i in range(text_begin_idx, text.size)], search_length)
+    pattern_hasher = PolynomialHash([pattern.tokens[i] for i in range(pattern_begin_idx, pattern.size)], search_length)
     for i, current_hash in enumerate(text_hasher):
         text_idx = text_begin_idx + i
         marked_token_idx = text.get_index_of_next_marked_token(text_idx)
@@ -40,21 +41,23 @@ def scanpattern(pattern: TilesManager, text: TilesManager, search_length: int, m
         if marked_token_idx and marked_token_idx < pattern_idx + search_length:
             continue
 
-        if pattern_hasher.current_value not in text_hash_to_positions:
+        if current_hash not in text_hash_to_positions:
             # Mismatch, skip
             continue
 
-        for text_idx in text_hash_to_positions[pattern_hasher.current_value]:
+        for text_idx in text_hash_to_positions[current_hash]:
             pattern_token_j = pattern_idx + search_length
             text_token_j = text_idx + search_length
             matching_tokens = search_length
 
+            # I assume that tokens are the same in range of search_length and I'm checking only tokens starting after search_length.
+            # Checking is also simplified (only token kind is compared), because I will compare then in details in mark_arrays function.
             while (
                 pattern_token_j < pattern.size
                 and text_token_j < text.size
                 and not pattern.marks[pattern_token_j]
                 and not text.marks[text_token_j]
-                and compare_token_fun(pattern.tokens[pattern_token_j], text.tokens[text_token_j])
+                and pattern.tokens[pattern_token_j] == text.tokens[text_token_j]
             ):
                 pattern_token_j += 1
                 text_token_j += 1
@@ -84,7 +87,7 @@ def check_matches(matches, n1: int, n2: int) -> bool:
     return True
 
 
-def mark_arrays(pattern: TilesManager, text: TilesManager, matches, compare_token_fun, tiles):
+def mark_arrays(pattern: TilesManager, text: TilesManager, matches, tiles):
     length = 0
 
     for pattern_idx, text_idx, l in matches:
@@ -92,7 +95,7 @@ def mark_arrays(pattern: TilesManager, text: TilesManager, matches, compare_toke
             [
                 not all(pattern.marks[pattern_idx : pattern_idx + l]),
                 not all(text.marks[text_idx : text_idx + l]),
-                all([compare_token_fun(pattern.tokens[pattern_idx + i], text.tokens[text_idx + i]) for i in range(0, l)]),
+                all([pattern.tokens[pattern_idx + i] == text.tokens[text_idx + i] for i in range(0, l)]),
             ]
         )
         if is_match:

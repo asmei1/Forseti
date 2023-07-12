@@ -3,7 +3,7 @@ from .tiles_manager import TilesManager
 from .scanpattern import scanpattern, mark_arrays, check_matches
 
 
-def gst(pattern: TilesManager, source: TilesManager, minimal_search_length: int, initial_search_length: int, compare_token_fun):
+def gst(pattern: TilesManager, source: TilesManager, minimal_search_length: int, initial_search_length: int):
     search_length = initial_search_length
     tiles = []
     max_matches = []
@@ -11,14 +11,14 @@ def gst(pattern: TilesManager, source: TilesManager, minimal_search_length: int,
 
     while search_length not in search_length_list:
         search_length_list.append(search_length)
-        longest_match = scanpattern(pattern, source, search_length, max_matches, compare_token_fun)
+        longest_match = scanpattern(pattern, source, search_length, max_matches)
 
         if longest_match > search_length * 2:
             # For very long matches restart detection to avoid subset matches
             search_length = longest_match
             continue
 
-        mark_arrays(pattern, source, max_matches, compare_token_fun, tiles)
+        mark_arrays(pattern, source, max_matches, tiles)
         max_matches = []
         if search_length > minimal_search_length * 2:
             search_length >>= 1
