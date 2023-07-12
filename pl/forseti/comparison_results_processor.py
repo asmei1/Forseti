@@ -108,9 +108,7 @@ class ComparisonResultsProcessor:
                 programs[pair.program_b.author] = pair.program_b
 
             stats_prototype = {}
-            stats_prototype["overall_similarity"] = 0.0
-            stats_prototype["overall_overlap_1"] = 0.0
-            stats_prototype["overall_overlap_2"] = 0.0
+
             stats_prototype["similarity"] = 0.0
             stats_prototype["overlap_1"] = 0.0
             stats_prototype["overlap_2"] = 0.0

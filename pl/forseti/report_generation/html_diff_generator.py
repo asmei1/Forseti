@@ -172,7 +172,7 @@ def generate_summary_page(title, data):
     data = sorted(data, key=lambda x: x[2], reverse=True)
     similarity_list = []
     for authors, html_diff_path, similarity in data:
-        similarity_list.append({"name_1": authors[0], "name_2": authors[1], "path": html_diff_path, "value": similarity})
+        similarity_list.append({"name_1": authors[0], "name_2": authors[1], "path": html_diff_path.replace("\\", "\\\\"), "value": similarity})
 
     environment = Environment(loader=FileSystemLoader(os.path.join(os.path.dirname(__file__), "templates/")))
     template = environment.get_template("summary.html")
