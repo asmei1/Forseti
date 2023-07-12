@@ -1,6 +1,7 @@
 from typing import List
 import logging
 import os
+import tqdm
 import json
 from .report_generation_config import ReportGenerationConfig
 from ..utils.slugify import slugify
@@ -83,7 +84,7 @@ class ReportGenerator:
             overlap1_report_data = []
             overlap2_report_data = []
             # data_for_write = []
-            for authors, results in self.__comparison_results_processor.get_flat_filtered_processed_results().items():
+            for authors, results in tqdm.tqdm(self.__comparison_results_processor.get_flat_filtered_processed_results().items()):
                 html_report_path = os.path.join(self.__html_output_path, slugify(authors[0] + " " + authors[1]) + ".html")
                 similarity_report_data.append((authors, html_report_path, results["similarity"]))
                 overlap1_report_data.append((authors, html_report_path, results["overlap_1"]))

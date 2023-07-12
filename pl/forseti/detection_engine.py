@@ -1,5 +1,6 @@
 import logging
 import time
+import tqdm
 from typing import List, Dict
 from scipy.stats import ks_2samp
 import numpy as np
@@ -90,11 +91,11 @@ class DetectionEngine:
     def __generate_comparison_pairs__(
         self, tokenized_programs: List[TokenizedProgram], config: DetectionConfig, selected_programs_to_compare: List[str]
     ) -> List[ComparisonPair]:
-        for tokenized_program in tokenized_programs:
+        for tokenized_program in tqdm.tqdm(tokenized_programs):
             if config.unroll_ast:
-                logging.info("unrolling program...")
+                logging.debug("unrolling program...")
                 tokenized_program = UnrollCodeUnits.unroll(tokenized_program, config.remove_unrolled_function, config.unroll_only_simple_functions)
-            logging.info("flattening program...")
+            logging.debug("flattening program...")
             tokenized_program = FlattenCodeUnits.flatten(tokenized_program)
 
         logging.info("generating comparison pairs...")
@@ -117,7 +118,7 @@ class DetectionEngine:
             config.initial_search_length,
         )
         if config.n_processors == 1:
-            comparison_results = [DetectionEngine.compare_tokens((rkr_gst_config, pair)) for pair in comparison_pairs]
+            comparison_results = [DetectionEngine.compare_tokens((rkr_gst_config, pair)) for pair in tqdm.tqdm(comparison_pairs)]
         else:
             comparison_results = execute_function_in_multiprocesses(
                 DetectionEngine.compare_tokens, list(zip([rkr_gst_config] * len(comparison_pairs), comparison_pairs)), config.n_processors

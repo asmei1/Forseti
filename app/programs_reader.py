@@ -1,10 +1,13 @@
+import tqdm
+import logging
 from typing import List, Tuple
 from pl.forseti.program import Program
 
 
 def read_programs_sets(file_paths_sets: List[List[str]]) -> List[Program]:
     programs_sets = []
-    for paths in file_paths_sets:
+    logging.info("Reading programs from disk...")
+    for paths in tqdm.tqdm(file_paths_sets):
         names = []
         files_content = []
         for path in paths:

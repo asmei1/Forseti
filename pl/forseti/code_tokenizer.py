@@ -1,4 +1,6 @@
 import copy
+import logging
+import tqdm
 from typing import List
 from .program import Program
 from .tokenized_program import TokenizedProgram
@@ -17,11 +19,12 @@ class CodeTokenizer:
         return code_parser.parse(program)
 
     def parse_programs(self, programs_sets: List[Program]) -> List[TokenizedProgram]:
+        logging.info("Parsing programs...")
         if self.__n_processors == 1:
-            programs = [self.code_parser.parse(program) for program in programs_sets]
+            programs = [self.code_parser.parse(program) for program in tqdm.tqdm(programs_sets)]
         else:
             parsers = [copy.deepcopy(self.code_parser) for _ in range(len(programs_sets))]
-            programs = execute_function_in_multiprocesses(CodeTokenizer.multiprocessing_parsing, zip(parsers, programs_sets), self.__n_processors)
+            programs = execute_function_in_multiprocesses(CodeTokenizer.multiprocessing_parsing, list(zip(parsers, programs_sets)), self.__n_processors)
 
         filtered_programs = []
         for p in programs:
