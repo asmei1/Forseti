@@ -8,8 +8,11 @@ import numpy as np
 from .comparison_pair import ComparisonPair
 from .comparison_pairs_generator import ComparisonPairsGenerator
 from .comparison_result import ComparisonResult
-from .detection.rkr_gst import rkr_gst
-from .detection.tiles_manager import TilesManager
+
+
+from .new_detection.gst import gst
+from .new_detection.tiles_manager import TilesManager
+
 from .detection_config import DetectionConfig
 from .flatten_code_units import FlattenCodeUnits
 from .token import Token, TokenKind
@@ -43,15 +46,17 @@ class DetectionEngine:
         config, comparison_pair = config_and_comparison_pair
         distinguish_operators_symbols, compare_function_names_in_function_calls, minimal_search_length, initial_search_length = config
         tokens_a, tokens_b = (comparison_pair.tokens_a, comparison_pair.tokens_b)
-        tiles_a = TilesManager(tokens_a)
-        tiles_b = TilesManager(tokens_b)
 
         logging.debug("analyzing comparison pair...")
         start_time = time.process_time()
         token_comparison_function = lambda token_a, token_b: DetectionEngine.token_comparison_function(
             distinguish_operators_symbols, compare_function_names_in_function_calls, token_a, token_b
         )
-        matches = rkr_gst(tiles_a, tiles_b, minimal_search_length, initial_search_length, DetectionEngine.get_sequence_from_tokens, token_comparison_function)
+
+        tiles_a = TilesManager(tokens_a)
+        tiles_b = TilesManager(tokens_b)
+        matches = gst(tiles_a, tiles_b, minimal_search_length, initial_search_length, token_comparison_function)
+
         # matches, marks_a, marks_b = scored_string_tilling(tokens_a, tokens_b, minimal_search_length, compare_function=token_comparison_function)
         # return ComparisonResult(comparison_pair, matches, marks_a, marks_b)
         logging.debug(f"done {time.process_time() - start_time} ...")
@@ -93,9 +98,9 @@ class DetectionEngine:
     ) -> List[ComparisonPair]:
         for tokenized_program in tqdm.tqdm(tokenized_programs):
             if config.unroll_ast:
-                logging.debug("unrolling program...")
+                # logging.debug("unrolling program...")
                 tokenized_program = UnrollCodeUnits.unroll(tokenized_program, config.remove_unrolled_function, config.unroll_only_simple_functions)
-            logging.debug("flattening program...")
+            # logging.debug("flattening program...")
             tokenized_program = FlattenCodeUnits.flatten(tokenized_program)
 
         logging.info("generating comparison pairs...")
