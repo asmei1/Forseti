@@ -10,8 +10,8 @@ from .comparison_pairs_generator import ComparisonPairsGenerator
 from .comparison_result import ComparisonResult
 
 
-from .new_detection.gst import gst
-from .new_detection.tiles_manager import TilesManager
+from .detection.gst import gst
+from .detection.tiles_manager import TilesManager
 
 from .detection_config import DetectionConfig
 from .flatten_code_units import FlattenCodeUnits
