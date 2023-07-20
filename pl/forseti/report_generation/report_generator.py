@@ -99,15 +99,19 @@ class ReportGenerator:
                     )
                 )
 
-                # with open(html_report_path, "w", encoding="utf8") as outfile:
-                #     outfile.write(
-                #         generate_html_diff_page(
-                #             results,
-                #             self.__comparison_results_processor.get_tokenized_program(authors[0]),
-                #             self.__comparison_results_processor.get_tokenized_program(authors[1]),
-                #         )
-                #     )
-            execute_function_in_multiprocesses(ReportGenerator.dump_reports, data_for_write, self.__report_generation_config.n_processors)
+                with open(html_report_path, "w", encoding="utf8") as outfile:
+                    outfile.write(
+                        generate_html_diff_page(
+                            results,
+                            self.__comparison_results_processor.get_tokenized_program(authors[0]),
+                            self.__comparison_results_processor.get_tokenized_program(authors[1]),
+                        )
+                    )
+            if self.__report_generation_config.n_processors == -1:
+                for data in data_for_write:
+                    ReportGenerator.dump_reports(data)
+            else:
+                execute_function_in_multiprocesses(ReportGenerator.dump_reports, data_for_write, self.__report_generation_config.n_processors)
 
             with open(os.path.join(self.__html_output_path, "similarity.html"), "w", encoding="utf8") as outfile:
                 outfile.write(generate_summary_page("Similarity", similarity_report_data))

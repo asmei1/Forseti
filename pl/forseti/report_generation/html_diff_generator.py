@@ -10,14 +10,23 @@ def __to_html_snippet__(format_data, path, code):
     snippet = copy.deepcopy(code)
 
     added = {}
-    for (comparison_index, index), locations in format_data.items():
-        for start_line, start_col, end_line, end_col, match_path in locations:
+    prev_locations = []
+    start_token_regex = r"##__##start_(\d+_\d+)##__##"
+    end_token_regex = r"##__##end_(\d+_\d+)##__##"
+
+    for (comparison_index, index), location in format_data.items():
+        for start_line, start_col, end_line, end_col, match_path in location:
             if path != match_path:
                 continue
-            for line_index in range(start_line, end_line + 1):
-                start_token = f"##__##start_{comparison_index}_{index}##__##"
-                end_token = "##__##end##__##"
+            start_token = f"##__##start_{comparison_index}_{index}##__##"
+            end_token = f"##__##end_{comparison_index}_{index}##__##"
+            for (prev_comparison_index, prev_index), p in prev_locations:
+                if p[0] == end_line and p[1] <= end_col:
+                    end_token = end_token + f"##__##end_{prev_comparison_index}_{prev_index}##__##" + f"##__##start_{prev_comparison_index}_{prev_index}##__##"
 
+            prev_locations.append(((comparison_index, index), (start_line, start_col, end_line, end_col)))
+
+            for line_index in [start_line, end_line]:
                 offset = 0
                 end_offset = 0
                 if line_index not in added:
@@ -52,11 +61,13 @@ def __to_html_snippet__(format_data, path, code):
 
                 snippet[line_index] = "".join(l)
 
+                if start_line == end_line:
+                    break
+
     remove_forbidden_tags = lambda x: x.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     snippet = list(map(remove_forbidden_tags, snippet))
     snippet = "".join(snippet)
-    start_token_regex = r"##__##start_(\d+_\d+)##__##"
-    end_token_regex = r"##__##end##__##"
+
     snippet = re.sub(start_token_regex, '<span class="s_\\1 modified">', snippet)
     snippet = re.sub(end_token_regex, "</span>", snippet)
     return snippet
@@ -75,35 +86,55 @@ def __get_preformat_info(comparison_results, prefix, code_units):
                     n_token = code_unit.ast[first_token_index + 1]
                     data[(comparison_index, index)] = []
                     for i in range(first_token_index + 1, min(last_token_index, len(code_unit.ast) - 1)):
-                        if abs(c_token.location.line - n_token.location.line) > localization["length"] and "forseti_function_call_result" not in [
-                            c_token.name,
-                            n_token.name,
-                        ]:
+                        if (
+                            abs(c_token.location.line - n_token.location.line) > localization["length"]
+                            and "forseti_function_call_result"
+                            not in [
+                                c_token.name,
+                                n_token.name,
+                            ]
+                        ) or c_token.location.path != n_token.location.path:
                             n_token = code_unit.ast[i - 1]
-                            c_token_column = c_token.location.column - 1
+
+                            forward_token = n_token
+                            for c in range(code_unit.ast.index(c_token) + 1, i):
+                                if code_unit.ast[c].location.line > forward_token.location.line or (
+                                    code_unit.ast[c].location.line == forward_token.location.line
+                                    and code_unit.ast[c].location.column > forward_token.location.column
+                                ):
+                                    forward_token = code_unit.ast[c]
+
+                            c_token_column = c_token.location.column
                             if c_token.token_kind == TokenKind.VariableDecl:
                                 c_token_column -= 1 + len(c_token.type_name)
                             data[(comparison_index, index)].append(
                                 (
                                     c_token.location.line - 1,
                                     c_token_column,
-                                    n_token.location.line - 1,
-                                    len(n_token.name) + n_token.location.column,
+                                    forward_token.location.line - 1,
+                                    len(forward_token.name) + forward_token.location.column,
                                     c_token.location.path,
                                 )
                             )
                             c_token = code_unit.ast[i]
                         n_token = code_unit.ast[i + 1]
 
-                    c_token_column = c_token.location.column - 1
+                    forward_token = n_token
+                    for c in range(code_unit.ast.index(c_token) + 1, i):
+                        if code_unit.ast[c].location.line > forward_token.location.line or (
+                            code_unit.ast[c].location.line == forward_token.location.line and code_unit.ast[c].location.column > forward_token.location.column
+                        ):
+                            forward_token = code_unit.ast[c]
+
+                    c_token_column = c_token.location.column
                     if c_token.token_kind == TokenKind.VariableDecl:
                         c_token_column -= 1 + len(c_token.type_name)
                     data[(comparison_index, index)].append(
                         (
                             c_token.location.line - 1,
                             c_token_column,
-                            n_token.location.line - 1,
-                            len(n_token.name) + n_token.location.column,
+                            forward_token.location.line - 1,
+                            len(forward_token.name) + forward_token.location.column,
                             c_token.location.path,
                         )
                     )
