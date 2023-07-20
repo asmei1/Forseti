@@ -137,3 +137,13 @@ class Token:
 
     def location_as_dict(self):
         return asdict(self.location)
+
+    def walk_preorder(self):
+        """Depth-first preorder walk over the cursor and its descendants.
+
+        Yields cursors.
+        """
+        yield self
+        for child in self.children:
+            for descendant in child.walk_preorder():
+                yield descendant
