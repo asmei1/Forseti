@@ -114,13 +114,14 @@ class ClangASTConverter:
         tokens = list(clang_cursor.get_tokens())
         if len(tokens) <= left_offset:
             # Macro detection, so we cannot get to tokens
-            return ""
-        return tokens[left_offset].spelling
+            return "", Location(clang_cursor.location.file.name, clang_cursor.location.line, clang_cursor.location.column)
+        token = tokens[left_offset]
+        return token.spelling, Location(token.location.file.name, token.location.line, token.location.column)
 
     def __get_unary_or_compound_op_token__(self, clang_cursor: ClangCursor) -> str:
         for token in list(clang_cursor.get_tokens()):
             if token.kind == ClangTokenKind.PUNCTUATION:
-                return token.spelling
+                return token.spelling, Location(token.location.file.name, token.location.line, token.location.column)
         return ""
 
     def __clang_cursor_kind_to_token_type_kind__(self, clang_cursor: ClangCursor, conversion_types_map) -> VariableTokenKind:
@@ -164,9 +165,9 @@ class ClangASTConverter:
             token.location = Location(clang_cursor.location.file.name, result_token_location.line, result_token_location.column)
 
         if token.token_kind == TokenKind.BinaryOp:
-            token.name = self.__get_binary_op_token__(clang_cursor)
+            token.name, token.location = self.__get_binary_op_token__(clang_cursor)
         elif token.token_kind == TokenKind.UnaryOp or token.token_kind == TokenKind.CompoundAssigmentOp:
-            token.name = self.__get_unary_or_compound_op_token__(clang_cursor)
+            token.name, token.location = self.__get_unary_or_compound_op_token__(clang_cursor)
         elif token.token_kind == TokenKind.Break:
             token.name = "break"
         elif token.token_kind == TokenKind.Continue:

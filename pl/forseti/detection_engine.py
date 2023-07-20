@@ -120,7 +120,9 @@ class DetectionEngine:
         if config.n_processors == 1:
             comparison_results = [DetectionEngine.compare_tokens((rkr_gst_config, pair)) for pair in tqdm.tqdm(comparison_pairs)]
         else:
+            chunksize = int(len(comparison_pairs) / (config.n_processors * 10)) if len(comparison_pairs) > (config.n_processors * 10) else 1
+            chunksize = max([1, chunksize])
             comparison_results = execute_function_in_multiprocesses(
-                DetectionEngine.compare_tokens, list(zip([rkr_gst_config] * len(comparison_pairs), comparison_pairs)), config.n_processors
+                DetectionEngine.compare_tokens, list(zip([rkr_gst_config] * len(comparison_pairs), comparison_pairs)), config.n_processors, 1.0, chunksize
             )
         return comparison_results

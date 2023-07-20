@@ -24,7 +24,9 @@ class CodeTokenizer:
             programs = [self.code_parser.parse(program) for program in tqdm.tqdm(programs_sets)]
         else:
             parsers = [copy.deepcopy(self.code_parser) for _ in range(len(programs_sets))]
-            programs = execute_function_in_multiprocesses(CodeTokenizer.multiprocessing_parsing, list(zip(parsers, programs_sets)), self.__n_processors)
+            programs = execute_function_in_multiprocesses(
+                CodeTokenizer.multiprocessing_parsing, list(zip(parsers, programs_sets)), max([int(self.__n_processors / 2), 1])
+            )
 
         filtered_programs = []
         for p in programs:
