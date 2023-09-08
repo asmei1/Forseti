@@ -87,6 +87,7 @@ class CCodeParser(CodeParser):
         cursors = self.__filter_translation_units__(translation_units, program.filenames)
 
         logging.debug("Converting Clang tokens to Forseti format ...")
+
         tokenized_program.code_units = self.clang_ast_converter.convert(cursors)
 
         logging.debug("Program parsing done.")

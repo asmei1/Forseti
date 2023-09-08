@@ -139,14 +139,14 @@ def configure_arg_parser(parser):
     report_generation_options.add_argument("--maximal_similarity_threshold", type=float, required=False, default=1.0)
 
     algorithm_options = parser.add_argument_group("detection algorithm configuration")
-    algorithm_options.add_argument("--minimal_search_length", type=int, default=8, required=False)
-    algorithm_options.add_argument("--initial_search_length", type=int, default=20, required=False)
+    algorithm_options.add_argument("--minimal_search_length", type=int, default=6, required=False)
+    algorithm_options.add_argument("--initial_search_length", type=int, default=16, required=False)
     algorithm_options.add_argument(
         "--compare_function_names_in_function_calls",
         type=str2bool,
         nargs="?",
         const=True,
-        default=True,
+        default=False,
         required=False,
     )
     algorithm_options.add_argument(

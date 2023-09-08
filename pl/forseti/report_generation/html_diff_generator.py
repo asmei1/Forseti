@@ -78,7 +78,7 @@ def __get_preformat_info(comparison_results, prefix, code_units):
     for comparison_index, (code_unit_names, comparison) in enumerate(comparison_results["code_unit_matches"].items()):
         for index, localization in enumerate(comparison["matches"]):
             for code_unit in code_units:
-                if code_unit.ast[0].name == code_unit_names[prefix - 1] and len(code_unit.ast) >= 2:
+                if code_unit.ast[0].name == code_unit_names[0 if prefix == "A" else 1] and len(code_unit.ast) >= 2:
                     first_token_index = localization["position_" + str(prefix)]
                     last_token_index = first_token_index + localization["length"] - 1
 
@@ -143,13 +143,13 @@ def __get_preformat_info(comparison_results, prefix, code_units):
     return data
 
 
-def __get_matches_list__(data, program_1, program_2):
+def __get_matches_list__(data, program_A, program_B):
     matches_list = []
     for comparison_index, (code_unit_names, match_data) in enumerate(data["code_unit_matches"].items()):
         single_match = {}
 
-        single_match["code_unit_name_1"] = code_unit_names[0]
-        single_match["code_unit_name_2"] = code_unit_names[1]
+        single_match["code_unit_name_A"] = code_unit_names[0]
+        single_match["code_unit_name_B"] = code_unit_names[1]
         single_match["similarity"] = match_data["similarity"]
         single_match["class"] = f"s_{comparison_index}"
 
@@ -157,11 +157,11 @@ def __get_matches_list__(data, program_1, program_2):
         for index, localization in enumerate(match_data["matches"]):
             fragment = {}
 
-            fragment["start_line_1"] = (
-                next(filter(lambda x: x.ast[0].name == code_unit_names[0], program_1.code_units)).ast[localization["position_1"]].location.line
+            fragment["start_line_A"] = (
+                next(filter(lambda x: x.ast[0].name == code_unit_names[0], program_A.code_units)).ast[localization["position_A"]].location.line
             )
-            fragment["start_line_2"] = (
-                next(filter(lambda x: x.ast[0].name == code_unit_names[1], program_2.code_units)).ast[localization["position_2"]].location.line
+            fragment["start_line_B"] = (
+                next(filter(lambda x: x.ast[0].name == code_unit_names[1], program_B.code_units)).ast[localization["position_B"]].location.line
             )
             fragment["length"] = localization["length"]
             fragment["class"] = f"s_{comparison_index}_{index}"
@@ -173,36 +173,36 @@ def __get_matches_list__(data, program_1, program_2):
     return matches_list
 
 
-def __get_files_content__(data, program_1, program_2):
-    format_data = __get_preformat_info(data, 1, program_1.code_units)
-    files_1 = []
-    for path, code in zip(program_1.filenames, program_1.raw_codes):
+def __get_files_content__(data, program_A, program_B):
+    format_data = __get_preformat_info(data, "A", program_A.code_units)
+    files_A = []
+    for path, code in zip(program_A.filenames, program_A.raw_codes):
         snippet = __to_html_snippet__(format_data, path, code)
-        files_1.append({"path": path, "code": snippet})
+        files_A.append({"path": path, "code": snippet})
 
-    format_data = __get_preformat_info(data, 2, program_2.code_units)
-    files_2 = []
-    for path, code in zip(program_2.filenames, program_2.raw_codes):
+    format_data = __get_preformat_info(data, "B", program_B.code_units)
+    files_B = []
+    for path, code in zip(program_B.filenames, program_B.raw_codes):
         snippet = __to_html_snippet__(format_data, path, code)
-        files_2.append({"path": path, "code": snippet})
+        files_B.append({"path": path, "code": snippet})
 
-    return files_1, files_2
+    return files_A, files_B
 
 
-def generate_html_diff_page(data, program_1: TokenizedProgram, program_2: TokenizedProgram):
+def generate_html_diff_page(data, program_A: TokenizedProgram, program_B: TokenizedProgram):
     environment = Environment(loader=FileSystemLoader(os.path.join(os.path.dirname(__file__), "templates/")))
     template = environment.get_template("report.html")
-    files_1, files_2 = __get_files_content__(data, program_1, program_2)
+    files_A, files_B = __get_files_content__(data, program_A, program_B)
     context = {
         "overall_similarity": data["similarity"],
-        "overlap_1": data["overlap_1"][0],
-        "overlap_2": data["overlap_2"][0],
-        "matched_tokens": data["overlap_1"][1],
-        "tokens_number_1": data["overlap_1"][2],
-        "tokens_number_2": data["overlap_2"][2],
-        "matches_list": __get_matches_list__(data, program_1, program_2),
-        "files_1": files_1,
-        "files_2": files_2,
+        "coverage_A": data["coverage_A"][0],
+        "coverage_B": data["coverage_B"][0],
+        "matched_tokens": data["coverage_A"][1],
+        "tokens_number_A": data["coverage_A"][2],
+        "tokens_number_B": data["coverage_B"][2],
+        "matches_list": __get_matches_list__(data, program_A, program_B),
+        "files_A": files_A,
+        "files_B": files_B,
     }
     return template.render(context)
 
@@ -211,7 +211,7 @@ def generate_summary_page(title, data):
     data = sorted(data, key=lambda x: x[2], reverse=True)
     similarity_list = []
     for authors, html_diff_path, similarity in data:
-        similarity_list.append({"name_1": authors[0], "name_2": authors[1], "path": html_diff_path.replace("\\", "\\\\"), "value": similarity})
+        similarity_list.append({"name_A": authors[0], "name_B": authors[1], "path": html_diff_path.replace("\\", "\\\\"), "value": similarity})
 
     environment = Environment(loader=FileSystemLoader(os.path.join(os.path.dirname(__file__), "templates/")))
     template = environment.get_template("summary.html")

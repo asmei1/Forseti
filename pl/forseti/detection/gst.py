@@ -33,7 +33,7 @@ def gst(pattern: TilesManager, source: TilesManager, minimal_search_length: int,
     for tile in sorted(tiles, key=lambda x: x["length"], reverse=True):
         if tile["length"] < minimal_search_length:
             continue
-        if check_matches(filtered_tiles, tile["position_of_token_1"], tile["position_of_token_2"]):
+        if check_matches(filtered_tiles, tile["position_of_token_A"], tile["position_of_token_B"]):
             filtered_tiles.append(tile)
 
     return filtered_tiles

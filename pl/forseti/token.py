@@ -71,8 +71,7 @@ VariableTokenKind.FloatingPoint = VariableTokenKind("Floating point presicion ty
 VariableTokenKind.Enum = VariableTokenKind("Enum type", "ENU")
 VariableTokenKind.Array = VariableTokenKind("Array type", "ARR")
 # literals
-TokenKind.CharacterLiteral = TokenKind("Char literatal type", "CHL")
-TokenKind.NumericLiteral = TokenKind("Numeric literal type", "NUL")
+TokenKind.NumericLiteral = TokenKind("Numeric literal type", "NLL")
 TokenKind.FloatingPointLiteral = TokenKind("Floating point literal type", "FLL")
 TokenKind.StringLiteral = TokenKind("String literal type", "STL")
 # structures and functions

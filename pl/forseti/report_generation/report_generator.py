@@ -81,14 +81,14 @@ class ReportGenerator:
 
         if self.__report_generation_config.generate_html_diffs:
             similarity_report_data = []
-            overlap1_report_data = []
-            overlap2_report_data = []
+            coverage1_report_data = []
+            coverage2_report_data = []
             data_for_write = []
             for authors, results in tqdm.tqdm(self.__comparison_results_processor.get_flat_filtered_processed_results().items()):
                 html_report_path = os.path.join(self.__html_output_path, slugify(authors[0] + " " + authors[1]) + ".html")
                 similarity_report_data.append((authors, html_report_path, results["similarity"]))
-                overlap1_report_data.append((authors, html_report_path, results["overlap_1"]))
-                overlap2_report_data.append((authors, html_report_path, results["overlap_2"]))
+                coverage1_report_data.append((authors, html_report_path, results["coverage_A"]))
+                coverage2_report_data.append((authors, html_report_path, results["coverage_B"]))
 
                 data_for_write.append(
                     (
@@ -99,14 +99,6 @@ class ReportGenerator:
                     )
                 )
 
-                with open(html_report_path, "w", encoding="utf8") as outfile:
-                    outfile.write(
-                        generate_html_diff_page(
-                            results,
-                            self.__comparison_results_processor.get_tokenized_program(authors[0]),
-                            self.__comparison_results_processor.get_tokenized_program(authors[1]),
-                        )
-                    )
             if self.__report_generation_config.n_processors == -1:
                 for data in data_for_write:
                     ReportGenerator.dump_reports(data)
@@ -116,14 +108,14 @@ class ReportGenerator:
             with open(os.path.join(self.__html_output_path, "similarity.html"), "w", encoding="utf8") as outfile:
                 outfile.write(generate_summary_page("Similarity", similarity_report_data))
 
-            with open(os.path.join(self.__html_output_path, "overlap_1.html"), "w", encoding="utf8") as outfile:
-                outfile.write(generate_summary_page("Overlap 1", overlap1_report_data))
+            with open(os.path.join(self.__html_output_path, "coverage_A.html"), "w", encoding="utf8") as outfile:
+                outfile.write(generate_summary_page("Coverage 1", coverage1_report_data))
 
-            with open(os.path.join(self.__html_output_path, "overlap_2.html"), "w", encoding="utf8") as outfile:
-                outfile.write(generate_summary_page("Overlap 2", overlap2_report_data))
+            with open(os.path.join(self.__html_output_path, "coverage_B.html"), "w", encoding="utf8") as outfile:
+                outfile.write(generate_summary_page("Coverage 2", coverage2_report_data))
 
-        if self.__report_generation_config.generate_jsons:
-            self.dump_comparison_results_in_json()
+        # if self.__report_generation_config.generate_jsons:
+        self.dump_comparison_results_in_json()
 
         if self.__report_generation_config.generate_code_unit_metrics:
             self.dump_code_unit_metrics()
@@ -153,10 +145,10 @@ class ReportGenerator:
                 self.__report_generation_config.n_processors,
             )
 
-        summary, overlap_1, overlap_2 = self.__comparison_results_processor.get_summary()
+        summary, coverage_A, coverage_B = self.__comparison_results_processor.get_summary()
         ReportGenerator.dump_comparison_result_in_json((config, ("summary", summary)))
-        ReportGenerator.dump_comparison_result_in_json((config, ("overlap_1", overlap_1)))
-        ReportGenerator.dump_comparison_result_in_json((config, ("overlap_2", overlap_2)))
+        ReportGenerator.dump_comparison_result_in_json((config, ("coverage_A", coverage_A)))
+        ReportGenerator.dump_comparison_result_in_json((config, ("coverage_B", coverage_B)))
 
     def dump_code_unit_metrics(self):
         config = self.__json_output_path

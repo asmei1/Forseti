@@ -76,12 +76,12 @@ def scanpattern(pattern: TilesManager, text: TilesManager, search_length: int, m
 
 
 def check_matches(matches, n1: int, n2: int) -> bool:
-    """Checks, if matches are not overlaping.
+    """Checks, if matches are not coverageing.
     matches[0,1,2]: 0 pos of X token, 1 pos of Y token, 2 length of the match."""
 
     for match in matches:
-        if (n1 >= match["position_of_token_1"] and n1 <= match["position_of_token_1"] + match["length"] - 1) or (
-            n2 >= match["position_of_token_2"] and n2 <= match["position_of_token_2"] + match["length"] - 1
+        if (n1 >= match["position_of_token_A"] and n1 <= match["position_of_token_A"] + match["length"] - 1) or (
+            n2 >= match["position_of_token_B"] and n2 <= match["position_of_token_B"] + match["length"] - 1
         ):
             return False
     return True
@@ -104,6 +104,6 @@ def mark_arrays(pattern: TilesManager, text: TilesManager, matches, tiles):
             text.marks[text_idx : text_idx + l] = [True] * l
             length += l
             # if check_matches(tiles, pattern_idx, text_idx):
-            tiles.append({"position_of_token_1": pattern_idx, "position_of_token_2": text_idx, "length": l})
+            tiles.append({"position_of_token_A": pattern_idx, "position_of_token_B": text_idx, "length": l})
 
     return length

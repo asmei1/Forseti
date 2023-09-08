@@ -104,36 +104,36 @@
     <div class="row">
         <div class="left" id="similarity_list">
             <p>Overall similarity: {{ overall_similarity|round(3) }}</p>
-            <p>Left program overlap: {{ overlap_1|round(3) }} ({{ matched_tokens }}/{{ tokens_number_1 }})</p>
-            <p>Right program overlap: {{ overlap_2|round(3) }} ({{ matched_tokens }}/{{ tokens_number_2 }})</p>
+            <p>Left program coverage: {{ coverage_A|round(3) }} ({{ matched_tokens }}/{{ tokens_number_A }})</p>
+            <p>Right program coverage: {{ coverage_B|round(3) }} ({{ matched_tokens }}/{{ tokens_number_B }})</p>
             <ol>
                 {% for match in matches_list %}
 
                 <li class="{{ match.class }}">
                     <div style="font-family: Monospace;" class="{{ match.class }}">
-                        {{ match.code_unit_name_1 }}<br>
-                        {{ match.code_unit_name_2 }}<br>
+                        {{ match.code_unit_name_A }}<br>
+                        {{ match.code_unit_name_B }}<br>
                     </div>
                     Fragment similarity: {{ match.similarity|round(3) }}<br>
                     {% for fragment in match.fragments %}
                     <span class="{{ fragment.class }}">
-                        Localization: {{ fragment.start_line_1 }}:{{ fragment.start_line_2 }}
+                        Localization: {{ fragment.start_line_A }}:{{ fragment.start_line_B }}
                         | {{ fragment.length }}</span><br>
                     {% endfor %}
                 </li>
                 {% endfor %}
             </ol>
         </div>
-        <div class="middle diff" id="files_1">
-            {% for f in files_1 %}
+        <div class="middle diff" id="files_A">
+            {% for f in files_A %}
             <div class="file_name">{{ f.path }}</div>
             <div class="raw_code">
                 <pre><code>{{ f.code }}</code></pre>
             </div>
             {% endfor %}
         </div>
-        <div class="right diff" id="files_2">
-            {% for f in files_2 %}
+        <div class="right diff" id="files_B">
+            {% for f in files_B %}
             <div class="file_name">{{ f.path }}</div>
             <div class="raw_code">
                 <pre><code>{{ f.code }}</code></pre>
@@ -258,8 +258,8 @@
     }
 
     const list = document.getElementById('similarity_list');
-    const left_panel = document.getElementById('files_1');
-    const right_panel = document.getElementById('files_2');
+    const left_panel = document.getElementById('files_A');
+    const right_panel = document.getElementById('files_B');
 
 
     (function () {

@@ -2,14 +2,14 @@ import logging
 import time
 import tqdm
 from typing import List, Dict
-from scipy.stats import ks_2samp
+from scipy.spatial import distance
 import numpy as np
 
 from .comparison_pair import ComparisonPair
 from .comparison_pairs_generator import ComparisonPairsGenerator
 from .comparison_result import ComparisonResult
 
-
+from .code_unit import CodeUnit
 from .detection.gst import gst
 from .detection.tiles_manager import TilesManager
 
@@ -30,11 +30,10 @@ class DetectionEngine:
     def token_to_str(distinguish_operators_symbols: bool, compare_function_names_in_function_calls: bool, token: Token):
         token_str = token.token_kind.short_name
 
-        if token.token_kind in [TokenKind.CharacterLiteral]:
+        if token.token_kind in [TokenKind.StringLiteral]:
             token_str += token.name
-        elif compare_function_names_in_function_calls:
-            if token.token_kind == TokenKind.FunctionCall:
-                token_str += token.name
+        if token.token_kind == TokenKind.FunctionCall:
+            token_str += token.name
         elif distinguish_operators_symbols:
             if token.token_kind in [TokenKind.BinaryOp, TokenKind.UnaryOp, TokenKind.CompoundAssigmentOp]:
                 token_str += token.name
@@ -53,13 +52,12 @@ class DetectionEngine:
         tiles_a = TilesManager(tokens_a, token_to_str)
         tiles_b = TilesManager(tokens_b, token_to_str)
         matches = gst(tiles_a, tiles_b, minimal_search_length, initial_search_length)
-
         # matches, marks_a, marks_b = scored_string_tilling(tokens_a, tokens_b, minimal_search_length, compare_function=token_comparison_function)
         # return ComparisonResult(comparison_pair, matches, marks_a, marks_b)
         logging.debug(f"done {time.process_time() - start_time} ...")
         return ComparisonResult(comparison_pair, matches, tiles_a.marks, tiles_b.marks)
 
-    def apply_ks_condition(self, pairs, config: DetectionConfig):
+    def apply_cos_condition(self, pairs, config: DetectionConfig):
         filtered_pairs: List[ComparisonPair] = []
 
         if config.ks_condition_value == -1:
@@ -82,9 +80,9 @@ class DetectionEngine:
                 np_a = np.fromiter(histogram_a.values(), dtype=int)
                 np_b = np.fromiter(histogram_b.values(), dtype=int)
 
-                if ks_2samp(np_a, np_b).pvalue > config.ks_condition_value:
+                if distance.cosine(np_a, np_b) > config.ks_condition_value:
                     filtered_pairs.append(p)
-            logging.info(f"({len(pairs)}, {len(filtered_pairs)}) pairs are left after filtering using ks test")
+            logging.info(f"({len(pairs)}, {len(filtered_pairs)}) pairs are left after filtering using cosine similarity.")
         else:
             filtered_pairs = pairs
 
@@ -105,10 +103,16 @@ class DetectionEngine:
         )
         pairs = comparison_pairs_generator.generate(tokenized_programs, selected_programs_to_compare)
 
-        return self.apply_ks_condition(pairs, config)
+        return self.apply_cos_condition(pairs, config)
 
     def analyze(self, tokenized_programs: List[TokenizedProgram], config: DetectionConfig = DetectionConfig(), selected_programs_to_compare: List[str] = []):
         comparison_pairs: List[ComparisonPair] = self.__generate_comparison_pairs__(tokenized_programs, config, selected_programs_to_compare)
+        if config.compare_whole_program:
+            for p in tokenized_programs:
+                merged_code_ast = []
+                for code_unit in p.code_units:
+                    merged_code_ast += code_unit.ast
+                p.code_units = [CodeUnit(merged_code_ast)]
         logging.info(f"analyzing {len(comparison_pairs)} comparison_pairs...")
 
         rkr_gst_config = (

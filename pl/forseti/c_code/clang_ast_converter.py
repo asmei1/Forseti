@@ -27,9 +27,8 @@ class ClangASTConverter:
 
         conversion_map[ClangCursorKind.CALL_EXPR] = TokenKind.FunctionCall
         conversion_map[ClangCursorKind.INTEGER_LITERAL, ClangCursorKind.NULL_STMT] = TokenKind.NumericLiteral
-        conversion_map[ClangCursorKind.CHARACTER_LITERAL] = TokenKind.CharacterLiteral
         conversion_map[ClangCursorKind.FLOATING_LITERAL] = TokenKind.FloatingPointLiteral
-        conversion_map[ClangCursorKind.STRING_LITERAL] = TokenKind.StringLiteral
+        conversion_map[ClangCursorKind.STRING_LITERAL, ClangCursorKind.CHARACTER_LITERAL] = TokenKind.StringLiteral
 
         conversion_map[ClangCursorKind.UNARY_OPERATOR] = TokenKind.UnaryOp
         conversion_map[ClangCursorKind.ARRAY_SUBSCRIPT_EXPR] = TokenKind.ArraySubscript
@@ -74,7 +73,7 @@ class ClangASTConverter:
         conversion_map[(ClangCursorType.BOOL)] = VariableTokenKind.Bool
         conversion_map[
             (ClangCursorType.CHAR_S, ClangCursorType.CHAR_U, ClangCursorType.UCHAR, ClangCursorType.CHAR16, ClangCursorType.CHAR32)
-        ] = VariableTokenKind.Bool
+        ] = VariableTokenKind.Char
         conversion_map[
             (
                 ClangCursorType.USHORT,

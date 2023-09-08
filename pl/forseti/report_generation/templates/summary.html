@@ -43,7 +43,7 @@
                 {% for pair in similarity_list %}
                 <button style="padding:10px; margin-bottom: 5px;"
                     onclick="window.location.href=&quot;{{pair.path}}&quot;">
-                    <div style="display: inline-block;">{{pair.name_1}}<br><br>{{pair.name_2}}</div>
+                    <div style="display: inline-block;">{{pair.name_A}}<br><br>{{pair.name_B}}</div>
                     <div style="display: inline-block; padding-left: 150px;">{{pair.value}}<br>&nbsp;</div>
                 </button>
                 {% endfor %}
